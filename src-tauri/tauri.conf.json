@@ -1,8 +1,8 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Kito",
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Kitto",
   "version": "0.1.0",
-  "identifier": "app.kito.player",
+  "identifier": "app.kitto.player",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Kito",
+        "title": "Kitto",
         "width": 1100,
         "height": 820,
         "minWidth": 360,
@@ -21,7 +21,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
     }
   },
   "bundle": {

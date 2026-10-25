@@ -5,7 +5,7 @@ import "./app.css";
 const target = document.getElementById("app");
 
 if (!target) {
-  throw new Error("Missing #app element for Kito.");
+  throw new Error("Missing #app element for Kitto.");
 }
 
 const app = mount(App, { target });

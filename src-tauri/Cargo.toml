@@ -1,20 +1,23 @@
 [package]
-name = "kito"
+name = "kitto"
 version = "0.1.0"
-description = "Kito local music player starter"
+description = "Kitto local music player starter"
 authors = ["you"]
 edition = "2024"
 
 [lib]
 # Avoid Windows name clash.
-name = "kito_lib"
+name = "kitto_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-persisted-scope = { version = "2", features = ["protocol-asset"] }
 
 [profile.release]
 codegen-units = 1

@@ -1,81 +1,117 @@
+import { convertFileSrc } from "@tauri-apps/api/core";
+
+export type AudioProgress = {
+  currentTime: number;
+  duration: number;
+};
+
 const audio = new Audio();
-let sourceUrl: string | null = null;
+audio.preload = "metadata";
 
-export function loadAudio(file: File) {
-    audio.pause();
+let pendingPosition: number | null = null;
 
-    if (sourceUrl) {
-        URL.revokeObjectURL(sourceUrl);
-    }
+audio.addEventListener("loadedmetadata", () => {
+  const position = pendingPosition;
+  pendingPosition = null;
 
-    sourceUrl = URL.createObjectURL(file);
-    audio.src = sourceUrl;
-}
+  if (
+    position !== null &&
+    Number.isFinite(audio.duration) &&
+    audio.duration > 0
+  ) {
+    audio.currentTime = Math.min(
+      position,
+      Math.max(0, audio.duration - 0.05),
+    );
+  }
+});
 
-export function playAudio() {
-    return audio.play();
-}
-
-export function pauseAudio() {
-    audio.pause();
-}
-
-export function onAudioEnded(callback: () => void) {
-  audio.addEventListener("ended", callback);
+function subscribe(events: string[], callback: () => void) {
+  for (const event of events) {
+    audio.addEventListener(event, callback);
+  }
 
   return () => {
-    audio.removeEventListener("ended", callback);
+    for (const event of events) {
+      audio.removeEventListener(event, callback);
+    }
   };
 }
 
-export function setVolume(value: number) {
-    audio.volume = value;
+export function loadAudio(path: string, position = 0) {
+  audio.pause();
+  pendingPosition = Number.isFinite(position) ? Math.max(0, position) : 0;
+  audio.src = convertFileSrc(path);
+  audio.load();
 }
 
-export type AudioProgress = {
-    currentTime: number;
-    duration: number;
+export function unloadAudio() {
+  audio.pause();
+  pendingPosition = null;
+  audio.removeAttribute("src");
+  audio.load();
+}
+
+export function playAudio() {
+  return audio.play();
+}
+
+export function pauseAudio() {
+  audio.pause();
+}
+
+export function setVolume(value: number) {
+  audio.volume = value;
+}
+
+export function seekTo(time: number) {
+  if (
+    !Number.isFinite(time) ||
+    !Number.isFinite(audio.duration) ||
+    audio.duration <= 0
+  ) {
+    return;
+  }
+
+  audio.currentTime = Math.max(0, Math.min(time, audio.duration));
+}
+
+export function getAudioProgress(): AudioProgress {
+  return {
+    currentTime: pendingPosition ?? audio.currentTime,
+    duration: Number.isFinite(audio.duration) ? audio.duration : 0,
+  };
 }
 
 export function onAudioProgress(
-    callback: (progress: AudioProgress) => void
+  callback: (progress: AudioProgress) => void,
 ) {
-    const update = () => {
-        callback({
-            currentTime: audio.currentTime,
-            duration: Number.isFinite(audio.duration) ? audio.duration : 0,
-        });
-    };
+  const update = () => callback(getAudioProgress());
 
-    const events = [
-        "loadedmetadata",
-        "durationchange",
-        "timeupdate",
-        "seeked",
-        "emptied",
-        "ended",
-    ];
-    for (const event of events) {
-        audio.addEventListener(event, update);
-    }
+  const unsubscribe = subscribe(
+    [
+      "loadedmetadata",
+      "durationchange",
+      "timeupdate",
+      "seeked",
+      "emptied",
+      "ended",
+    ],
+    update,
+  );
 
-    update();
+  update();
+  return unsubscribe;
+}
 
-    return () => {
-        for (const event of events) {
-            audio.removeEventListener(event, update);
-        }
-    };
-} 
+export function onAudioEnded(callback: () => void) {
+  return subscribe(["ended"], () => {
+    if (audio.ended) callback();
+  });
+}
 
-export function seekTo(time: number) {
-    if (
-        !Number.isFinite(time) ||
-        !Number.isFinite(audio.duration) ||
-        audio.duration <= 0
-    ) {
-        return;
-    }
-
-    audio.currentTime = Math.max(0, Math.min(time, audio.duration));
+export function onAudioError(callback: () => void) {
+  return subscribe(["error"], () => {
+    if (audio.error) callback();
+  });
 }
