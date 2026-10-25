@@ -204,6 +204,36 @@ main {
   text-transform: uppercase;
 }
 
+.volume-control {
+  margin-top: 24px;
+  font-size: 14px;
+}
+
+.volume-control input{
+  accent-color: var(--color-accent);
+}
+
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min (100%, 360px);
+  margin-top: 20px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-accent);
+}
+
+.timeline span {
+  min-width: 34px;
+}
+
 @media (max-width: 600px) {
   .app-shell {
     padding: 20px 24px;
