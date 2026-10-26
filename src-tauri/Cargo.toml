@@ -19,6 +19,9 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-persisted-scope = { version = "2", features = ["protocol-asset"] }
 
+[target.'cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))'.dependencies]
+tauri-plugin-window-state = "2"
+
 [profile.release]
 codegen-units = 1
 lto = true

@@ -1,70 +1,7 @@
-import { convertFileSrc } from "@tauri-apps/api/core";
-import { title } from "process";
-import { cachedDataVersionTag } from "v8";
+import { readTrackMetadata } from "./metadata";
+import type { TrackTags } from "./types";
 
-type TrackMetadata = {
-    title: string | null;
-    artist: string | null;
-    album: string | null;
-    coverUrl: string | null;
-};
-
-async function readTrackMetadata(
-    path: string,
-    signal: AbortSignal,
-) {
-    const { parseWebStream, selectCover } =
-        await import("music-metadata");
-    
-    signal.throwIfAborted();
-
-    const responce = await fetch(convertFileSrc(path), {
-        signal,
-    });
-
-    if (!responce.ok || !responce.body) {
-        throw new Error ("Could not read the audio file");
-    }
-
-    const contentLength = Number(
-        responce.headers.get("Content-Length"),
-    );
-
-    const { common } = await parseWebStream(
-        responce.body,
-        {
-            path,
-            size:
-                Number.isFinite(contentLength) && contentLength > 0
-                    ? contentLength
-                    : undefined,
-        },
-        {
-            duration: false,
-        },
-    );
-
-    const picture = selectCover(common.picture);
-
-    const cover = picture
-        ? new Blob(
-            [new Uint8Array(picture.data).buffer],
-            { type: picture.format },
-        )
-    : null;
-
-    return {
-        title: common.title?.trim() || null,
-        artist:
-            common.artist?.trim() ||
-            common.artists?.join(", ").trim() ||
-            common.albumartist?.trim() ||
-            null,
-        album: common.album?.trim() || null,
-        cover,
-    };
-}
-
+type TrackMetadata = TrackTags & { coverUrl: string | null };
 
 export function createTrackMetadata(
     getPath: () => string | null,
@@ -72,10 +9,12 @@ export function createTrackMetadata(
     let data = $state<TrackMetadata | null>(null);
     let isLoading = $state(false);
     let error = $state("");
+    let activePath = $state<string | null>(null);
 
     $effect(() => {
         const path = getPath();
 
+        activePath = path;
         data = null;
         error = "";
         isLoading = path !== null;
@@ -83,12 +22,12 @@ export function createTrackMetadata(
         if (!path) return;
 
         const controller = new AbortController();
-        let coverUrl: string | null = null; 
+        let coverUrl: string | null = null;
 
-        async function load() {
+        async function load(path: string) {
             try {
                 const result = await readTrackMetadata(
-                    path!,
+                    path,
                     controller.signal,
                 );
 
@@ -102,12 +41,13 @@ export function createTrackMetadata(
                     title: result.title,
                     artist: result.artist,
                     album: result.album,
+                    coverUrl,
                 };
             } catch (cause) {
                 if (controller.signal.aborted) return;
 
                 error = "Metadata unavailable";
-                console.warn("could not read track metadata", cause);
+                console.warn("Could not read track metadata.", cause);
             } finally {
                 if (!controller.signal.aborted) {
                     isLoading = false;
@@ -117,7 +57,7 @@ export function createTrackMetadata(
             }
         }
 
-        void load();
+        void load(path);
 
         return () => {
             controller.abort();
@@ -130,15 +70,16 @@ export function createTrackMetadata(
 
     return {
         get data() {
-            return data;
+            return activePath === getPath() ? data : null;
         },
 
         get isLoading() {
-            return isLoading
+            const path = getPath();
+            return path !== null && (activePath !== path || isLoading);
         },
 
         get error() {
-            return error;
+            return activePath === getPath() ? error : "";
         },
     };
 }

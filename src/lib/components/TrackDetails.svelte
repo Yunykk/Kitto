@@ -1,7 +1,4 @@
 <script lang="ts">
-    import { fail } from "assert";
-    import { findPackageJSON } from "module";
-
     type Props = {
         title: string;
         artist: string | null;
@@ -23,9 +20,9 @@
     }: Props = $props();
 
     let failedCover = $state<string | null> (null);
-    
+
     const credits = $derived(
-        [artist, album].filter(Boolean).join(" . "),
+        [artist, album].filter(Boolean).join(" · "),
     );
 
     const subtitle = $derived(
@@ -68,9 +65,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px; 
+        gap: 12px;
+        width: 100%;
         min-width: 0;
-        max-height: 52px;
+        min-height: 52px;
     }
 
     .track-cover {
@@ -89,7 +87,7 @@
     h2 {
         margin: 0;
         overflow: hidden;
-        font-size: clamp(20px, 2.5 vw, 28px);
+        font-size: clamp(20px, 2.5vw, 28px);
         font-weight: 650;
         line-height: 1.2;
         text-overflow: ellipsis;

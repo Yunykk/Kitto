@@ -41,8 +41,8 @@
     type="button"
     aria-label={isPlaying ? "Pause" : "Play"}
     title={hasTrack
-      ? (isPlaying ? "Pause (Space)" : "Play (Play)") 
-      : "Add sum music to start"}
+      ? (isPlaying ? "Pause (Space)" : "Play (Space)")
+      : "Add music to start"}
     disabled={!hasTrack}
     onclick={ontoggle}
   >
@@ -59,7 +59,7 @@
     class="transport-button"
     type="button"
     aria-label="Next track"
-    title="Next track (Ctrl + Right)"
+    title="Next track (Ctrl+Right)"
     disabled={!canNext}
     onclick={onnext}
   >

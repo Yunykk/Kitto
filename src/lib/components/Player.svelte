@@ -8,16 +8,65 @@
   import TrackList from "./TrackList.svelte";
   import { createTrackMetadata } from "../track-metadata.svelte";
   import TrackDetails from "./TrackDetails.svelte";
-  
+  import { createMediaSession } from "../media-session.svelte";
+  import { createQueueMetadata } from "../queue-metadata.svelte";
+
+
   const player = createPlayer();
+  const queueMetadata = createQueueMetadata(
+    () => player.tracks,
+  );
   const trackMetadata = createTrackMetadata(
     () => player.currentTrack?.path ?? null,
   );
+  const currentTags = $derived(
+    trackMetadata.data ?? queueMetadata.tracks[player.currentIndex] ?? null,
+  );
   const displayTitle = $derived(
-    trackMetadata.data?.title ??
+    currentTags?.title ??
     player.currentTrack?.title ??
     "Your library is empty",
   );
+
+  createMediaSession(
+    {
+      get hasTrack() {
+        return player.currentTrack !== null;
+      },
+
+      get title() {
+        return displayTitle;
+      },
+
+      get artist() {
+        return currentTags?.artist ?? null;
+      },
+
+      get album() {
+        return currentTags?.album ?? null;
+      },
+
+      get coverUrl() {
+        return trackMetadata.data?.coverUrl ?? null;
+      },
+
+      get isPlaying() {
+        return player.isPlaying;
+      },
+
+      get canPrevious() {
+        return player.canPrevious;
+      },
+
+      get canNext() {
+        return player.canNext;
+      },
+    },
+
+    player,
+
+  );
+
 
   let view = $state<"player" | "queue">("player");
 </script>
@@ -43,8 +92,8 @@
     <div class="player-deck">
       <TrackDetails
         title={displayTitle}
-        artist={trackMetadata.data?.artist ?? null}
-        album={trackMetadata.data?.album ?? null}
+        artist={currentTags?.artist ?? null}
+        album={currentTags?.album ?? null}
         coverUrl={trackMetadata.data?.coverUrl ?? null}
         isLoading={trackMetadata.isLoading}
         error={trackMetadata.error}
@@ -88,7 +137,9 @@
   </section>
 
   <TrackList
-    tracks={player.tracks}
+    tracks={queueMetadata.tracks}
+    isIndexing={queueMetadata.isIndexing}
+    metadataError={queueMetadata.error}
     currentIndex={player.currentIndex}
     isChoosingFiles={player.isChoosingFiles}
     onadd={player.chooseFiles}

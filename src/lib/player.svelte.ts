@@ -2,7 +2,7 @@ import { onMount } from "svelte";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { QueueTrack } from "./types";
-import { registeredPlayerShortcuts } from "./shortcuts";
+import { registerPlayerShortcuts } from "./shortcuts";
 import {
   loadSettings,
   saveSettings,
@@ -22,7 +22,6 @@ import {
   onAudioError,
 } from "./audio";
 import { createPlaybackOrder } from "./playback-order.svelte";
-import { register } from "module";
 
 export function createPlayer() {
   let tracks = $state<QueueTrack[]>([]);
@@ -42,6 +41,7 @@ export function createPlayer() {
   let playbackError = $state("");
   let storageError = $state("");
   let isPlaying = $state(false);
+  let isStarting = $state(false);
   let isChoosingFiles = $state(false);
   let volume = $state(1);
   let repeatMode = $state<RepeatMode>("off");
@@ -138,6 +138,7 @@ export function createPlayer() {
     seekTime = position;
     duration = 0;
     isPlaying = false;
+    isStarting = false;
     playbackError = "";
 
     loadAudio(track.path, position);
@@ -152,6 +153,7 @@ export function createPlayer() {
     if (!currentTrack) return;
 
     const requestId = ++playbackRequestId;
+    isStarting = true;
     playbackError = "";
 
     try {
@@ -164,6 +166,10 @@ export function createPlayer() {
       if (requestId === playbackRequestId) {
         isPlaying = false;
         playbackError = "Could not play this file.";
+      }
+    } finally {
+      if (requestId === playbackRequestId) {
+        isStarting = false;
       }
     }
   }
@@ -180,10 +186,11 @@ export function createPlayer() {
   function togglePlayback() {
     if (!currentTrack) return;
 
-    if (isPlaying) {
+    if (isPlaying || isStarting) {
       playbackRequestId += 1;
       pauseAudio();
       isPlaying = false;
+      isStarting = false;
       persistLibrary();
       return;
     }
@@ -279,6 +286,7 @@ export function createPlayer() {
     seekTime = 0;
     duration = 0;
     isPlaying = false;
+    isStarting = false;
     playbackError = "";
 
     unloadAudio();
@@ -291,7 +299,7 @@ export function createPlayer() {
     if (removedIndex < 0) return;
 
     const selectedId = currentTrack?.id;
-    const continuePlaying = isPlaying;
+    const continuePlaying = isPlaying || isStarting;
 
     tracks = tracks.filter((track) => track.id !== id);
 
@@ -366,6 +374,7 @@ export function createPlayer() {
     const unsubscribeError = onAudioError(() => {
       playbackRequestId += 1;
       isPlaying = false;
+      isStarting = false;
       playbackError =
         "Could not open this file. It may be missing or unsupported.";
     });
@@ -403,11 +412,13 @@ export function createPlayer() {
         });
     }
 
-    const removeShortcuts = registeredPlayerShortcuts({
+    const removeShortcuts = registerPlayerShortcuts({
       togglePlayback,
 
       nextTrack: () => {
-        navigate("next");
+        if (order.canNext(repeatMode === "all")) {
+          navigate("next");
+        }
       },
 
       previousTrack: () => {
@@ -425,6 +436,8 @@ export function createPlayer() {
       disposed = true;
       persistLibrary();
       playbackRequestId += 1;
+      isPlaying = false;
+      isStarting = false;
 
       window.removeEventListener("pagehide", persistLibrary);
       removeShortcuts();
@@ -441,7 +454,7 @@ export function createPlayer() {
     get currentIndex() { return currentIndex; },
     get currentTrack() { return currentTrack; },
     get playbackError() { return playbackError || storageError; },
-    get isPlaying() { return isPlaying; },
+    get isPlaying() { return isPlaying || isStarting; },
     get isChoosingFiles() { return isChoosingFiles; },
     get volume() { return volume; },
     get repeatMode() { return repeatMode; },
@@ -466,5 +479,6 @@ export function createPlayer() {
     previewSeek,
     commitSeek,
     cancelSeek,
+    seekBy,
   };
 }

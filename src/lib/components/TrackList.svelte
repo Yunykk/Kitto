@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type { QueueTrack } from "../types";
+  import type { DisplayTrack } from "../types";
   import AddMusicButton from "./AddMusicButton.svelte";
 
   type Props = {
-    tracks: QueueTrack[];
+    tracks: DisplayTrack[];
+    isIndexing: boolean;
+    metadataError: string;
     currentIndex: number;
     isChoosingFiles: boolean;
     onadd: () => void;
@@ -12,14 +14,41 @@
     onclear: () => void;
   };
 
-  let { tracks, currentIndex, isChoosingFiles, onadd, onselect, onremove, onclear }: Props = $props();
+  let {
+    tracks,
+    currentIndex,
+    isChoosingFiles,
+    isIndexing,
+    metadataError,
+    onadd,
+    onselect,
+    onremove,
+    onclear,
+  } : Props = $props();
+
   let query = $state("");
 
   let visibleTracks = $derived.by(() => {
     const term = query.trim().toLowerCase();
+
+
+
     return tracks
       .map((track, index) => ({ track, index }))
-      .filter(({ track }) => track.title.toLowerCase().includes(term));
+      .filter(({ track }) => {
+        const searchable = [
+          track.title,
+          track.artist,
+          track.album,
+          track.fileName,
+        ]
+
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+        return searchable.includes(term);
+      });
   });
 
   $effect(() => {
@@ -49,6 +78,12 @@
     </button>
   </div>
 
+  {#if isIndexing || metadataError}
+    <p class="metadata-status" role="status">
+      {isIndexing ? "Reading track details..." : metadataError}
+    </p>
+  {/if}
+
   {#if tracks.length === 0}
     <div class="queue-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -77,7 +112,13 @@
             onclick={() => onselect(index)}
           >
             <span class="track-index">{String(index + 1).padStart(2, "0")}</span>
-            <span class="track-name">{track.title}</span>
+            <span class="track-label">
+              <span class="track-name">{track.title}</span>
+
+              {#if track.artist}
+                <span class="track-artist">{track.artist}</span>
+              {/if}
+            </span>
           </button>
           <button class="track-remove" type="button" aria-label={`Remove ${track.title} from queue`} title="Remove from queue" onclick={() => onremove(track.id)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">

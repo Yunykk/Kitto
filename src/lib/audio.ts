@@ -73,7 +73,9 @@ export function seekTo(time: number) {
     return;
   }
 
-  audio.currentTime = Math.max(0, Math.min(time, audio.duration));
+  const position = Math.max(0, Math.min(time, audio.duration));
+  if (pendingPosition !== null) pendingPosition = position;
+  audio.currentTime = position;
 }
 
 export function getAudioProgress(): AudioProgress {

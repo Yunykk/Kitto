@@ -1,5 +1,3 @@
-import { realpathSync } from "fs";
-
 type PlayerShortcuts = {
     togglePlayback: () => void;
     nextTrack: () => void;
@@ -8,10 +6,10 @@ type PlayerShortcuts = {
     adjustVolume: (delta: number) => void;
 };
 
-export function registeredPlayerShortcuts(actions: PlayerShortcuts) {
+export function registerPlayerShortcuts(actions: PlayerShortcuts) {
     const arrows: Record<string, () => void> = {
         ArrowLeft: () => actions.seekBy(-5),
-        Arrowright: () => actions.seekBy(5),
+        ArrowRight: () => actions.seekBy(5),
         ArrowUp: () => actions.adjustVolume(0.05),
         ArrowDown: () => actions.adjustVolume(-0.05),
     };
@@ -26,12 +24,12 @@ export function registeredPlayerShortcuts(actions: PlayerShortcuts) {
             return;
         }
 
-        const target = 
+        const target =
             event.target instanceof Element ? event.target : null;
 
         if (
             target?.closest(
-                "input, textarea, select, [contenteditable]:not([conenteditable='false'])",
+                "input, textarea, select, [contenteditable]:not([contenteditable='false'])",
             )
         ) {
             return;
