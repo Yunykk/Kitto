@@ -3,10 +3,8 @@
   type Props = {
     hasTrack: boolean;
     isPlaying: boolean;
-    isChoosingFiles: boolean;
     canPrevious: boolean;
     canNext: boolean;
-    onfiles: () => void;
     onprevious: () => void;
     onnext: () => void;
     ontoggle: () => void;
@@ -15,10 +13,8 @@
   let {
     hasTrack,
     isPlaying,
-    isChoosingFiles,
     canPrevious,
     canNext,
-    onfiles,
     onprevious,
     onnext,
     ontoggle
@@ -26,20 +22,12 @@
 </script>
 
 <div class="playback-controls" role="group" aria-label="Playback controls">
-  <button
-  class="choose-files"
-  type="button"
-  disabled={isChoosingFiles}
-  onclick={onfiles}
-  >
-    {isChoosingFiles ? "Opening" : "Add music"}
-  </button>
 
   <button
     class="transport-button"
     type="button"
     aria-label="Previous track"
-    title="Previous track"
+    title="Previous track (Ctrl+Left)"
     disabled={!canPrevious}
     onclick={onprevious}
   >
@@ -52,7 +40,9 @@
     class="transport-button transport-button--primary"
     type="button"
     aria-label={isPlaying ? "Pause" : "Play"}
-    title={hasTrack ? (isPlaying ? "Pause" : "Play") : "Choose an audio file first"}
+    title={hasTrack
+      ? (isPlaying ? "Pause (Space)" : "Play (Play)") 
+      : "Add sum music to start"}
     disabled={!hasTrack}
     onclick={ontoggle}
   >
@@ -69,7 +59,7 @@
     class="transport-button"
     type="button"
     aria-label="Next track"
-    title="Next track"
+    title="Next track (Ctrl + Right)"
     disabled={!canNext}
     onclick={onnext}
   >

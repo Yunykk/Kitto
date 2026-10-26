@@ -36,6 +36,7 @@
 
   <input
     type="range"
+    style:--range-progress={`${duration > 0 ? Math.min(1, time / duration) * 100 : 0}%`}
     bind:this={range}
     min="0"
     step="0.1"

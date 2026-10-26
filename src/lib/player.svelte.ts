@@ -2,6 +2,7 @@ import { onMount } from "svelte";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { QueueTrack } from "./types";
+import { registeredPlayerShortcuts } from "./shortcuts";
 import {
   loadSettings,
   saveSettings,
@@ -21,6 +22,7 @@ import {
   onAudioError,
 } from "./audio";
 import { createPlaybackOrder } from "./playback-order.svelte";
+import { register } from "module";
 
 export function createPlayer() {
   let tracks = $state<QueueTrack[]>([]);
@@ -309,6 +311,24 @@ export function createPlayer() {
     persistSettings();
   }
 
+  function seekBy(seconds: number) {
+    if (!currentTrack || duration <= 0) return;
+
+    cancelSeek();
+    seekTo(getAudioProgress().currentTime + seconds);
+    currentTime = getAudioProgress().currentTime;
+    persistLibrary();
+  }
+
+  function adjustVolume(delta: number) {
+    volume = Math.round(
+      Math.max(0, Math.min(1, volume + delta)) * 100,
+    ) / 100;
+
+    setVolume(volume);
+    persistSettings();
+  }
+
   onMount(() => {
     disposed = false;
 
@@ -383,6 +403,22 @@ export function createPlayer() {
         });
     }
 
+    const removeShortcuts = registeredPlayerShortcuts({
+      togglePlayback,
+
+      nextTrack: () => {
+        navigate("next");
+      },
+
+      previousTrack: () => {
+        if (order.canPrevious(repeatMode === "all")) {
+          navigate("previous");
+        }
+      },
+      seekBy,
+      adjustVolume,
+    });
+
     window.addEventListener("pagehide", persistLibrary);
 
     return () => {
@@ -391,6 +427,7 @@ export function createPlayer() {
       playbackRequestId += 1;
 
       window.removeEventListener("pagehide", persistLibrary);
+      removeShortcuts();
       removeCloseListener?.();
       unsubscribeProgress();
       unsubscribeEnded();

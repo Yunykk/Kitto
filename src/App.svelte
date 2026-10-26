@@ -11,22 +11,13 @@
 <div class="app-shell">
   <header class="app-header">
     <div class="brand">
-      <img src="/kitto.svg" width="40" height="40" alt="" />
+      <img src="/kitto.svg" width="32" height="32" alt="" />
       <h1>{productName}</h1>
     </div>
-
-    <span class="library-label">
-      <span class="status-dot" aria-hidden="true"></span>
-      Library
-    </span>
+    <span class="app-label">Local music player</span>
   </header>
 
-  <main>
+  <main class="app-main">
     <Player />
   </main>
-
-  <footer class="app-footer">
-    <span>Local music</span>
-    <span>Kitto</span>
-  </footer>
 </div>
