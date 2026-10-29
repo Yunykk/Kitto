@@ -1,0 +1,363 @@
+/* Each theme has its own material palette, including its night finish. */
+:root {
+  --material-highlight: #ffffffb8;
+  --material-shadow: #29262026;
+  --material-edge: #ffffffa6;
+  --material-depth: 0 22px 42px -20px var(--material-shadow), 0 7px 14px -6px var(--material-shadow);
+  --color-surface: #eceef0;
+  --color-panel: #e1e4e7;
+  --color-raised: #f7f8fa;
+  --color-muted: #62686d;
+  --color-line: #cdd1d5;
+}
+:root[data-mode="dark"] {
+  --material-highlight: #ffffff14;
+  --material-shadow: #000000b3;
+  --material-edge: #ffffff17;
+}
+:root[data-theme="orbit"][data-mode="dark"] {
+  --color-surface: #171b20; --color-panel: #111418; --color-raised: #242a30;
+  --color-line: #353d45; --color-text: #ebedf0; --color-muted: #a0a9b3;
+}
+:root[data-theme="soft-ceramic"] {
+  --color-surface: #e9e3d9; --color-panel: #ddd6ca; --color-raised: #f8f3ea;
+  --color-text: #38342f; --color-muted: #797268; --color-line: #cec6b9;
+  --material-shadow: #51483a38; --material-highlight: #ffffffc9;
+}
+:root[data-theme="soft-ceramic"][data-mode="dark"] {
+  --color-surface: #262522; --color-panel: #1e1d1a; --color-raised: #34322e;
+  --color-text: #eee7dc; --color-muted: #b1aa9e; --color-line: #48443d;
+  --material-shadow: #000000b0; --material-highlight: #fff3df18;
+}
+:root[data-theme="editorial"] {
+  --color-surface: #e7e5df; --color-panel: #dcdad3; --color-raised: #f6f5ef;
+  --color-text: #23251f; --color-muted: #686c62; --color-line: #bdbfb3;
+  --material-shadow: #171a2140;
+}
+:root[data-theme="editorial"][data-mode="dark"] {
+  --color-surface: #20241f; --color-panel: #161b17; --color-raised: #2d332b;
+  --color-text: #f0eee1; --color-muted: #aab5a1; --color-line: #444e3e;
+  --material-shadow: #000000a8;
+}
+:root[data-theme="tape-deck"] {
+  --color-surface: #c9c9c3; --color-panel: #333634; --color-raised: #e6e5dd;
+  --color-text: #252823; --color-muted: #61685d; --color-line: #aaafa4;
+  --material-shadow: #10191066; --material-highlight: #ffffffb0;
+}
+:root[data-theme="tape-deck"][data-mode="dark"] {
+  --color-surface: #242724; --color-panel: #151915; --color-raised: #363b35;
+  --color-text: #e4e9db; --color-muted: #a8b19f; --color-line: #474f43;
+  --material-shadow: #000000bd; --material-highlight: #ffffff1c;
+}
+:root[data-theme="floating-bento"] {
+  --color-surface: #e6e9f1; --color-panel: #d1d8e7; --color-raised: #f3f6fc;
+  --color-text: #293147; --color-muted: #63718a; --color-line: #c0cadd;
+  --material-shadow: #38496b3d; --material-highlight: #ffffffc9;
+}
+:root[data-theme="floating-bento"][data-mode="dark"] {
+  --color-surface: #141d2a; --color-panel: #0d1421; --color-raised: #243146;
+  --color-text: #e6effb; --color-muted: #9baec9; --color-line: #354861;
+  --material-shadow: #000612b8; --material-highlight: #a9caff25;
+}
+:root[data-theme="paper-club"] {
+  --color-surface: #e9dfc9; --color-panel: #b6a283; --color-raised: #fcf6e9;
+  --color-text: #44362b; --color-muted: #7b6751; --color-line: #c5b99f;
+  --material-shadow: #5f402752; --material-highlight: #fff8e2b0;
+}
+:root[data-theme="paper-club"][data-mode="dark"] {
+  --color-surface: #2c251e; --color-panel: #1b1612; --color-raised: #3d3329;
+  --color-text: #f1e3cb; --color-muted: #baa58a; --color-line: #584936;
+  --material-shadow: #000000b8; --material-highlight: #f3d8a41c;
+}
+
+/* Common controls: light catches the rim, shadows anchor the objects. */
+.app-header { position: relative; z-index: 1; }
+.brand { gap: 10px; }
+.brand h1 { letter-spacing: -1px; }
+.settings-trigger, .choose-files {
+  background-color: var(--color-raised);
+  background-image: linear-gradient(
+    155deg,
+    var(--material-highlight),
+    transparent
+  );
+  box-shadow: inset 0 1px 0 var(--material-highlight), 0 2px 3px var(--material-shadow);
+}
+.library-search { box-shadow: inset 0 2px 4px var(--material-shadow), 0 1px 0 var(--material-highlight); }
+.library-heading { margin-bottom: 22px; }
+.library-heading h2 { font-weight: 700; }
+.library-panel { position: relative; }
+.track-list li { margin-bottom: 6px; border: 1px solid transparent; }
+.track-list li.active {
+  border-color: color-mix(in srgb, var(--color-accent) 27%, var(--color-line));
+  background: linear-gradient(135deg, var(--color-accent-soft), color-mix(in srgb, var(--color-accent-soft), var(--color-raised) 55%));
+  box-shadow: inset 0 1px 0 var(--material-highlight), 0 3px 6px -3px var(--material-shadow);
+}
+.track-select { min-height: 50px; }
+.transport-button {
+  background: linear-gradient(150deg, var(--color-raised) 10%, var(--color-surface) 90%);
+  box-shadow: inset 0 2px 1px var(--material-highlight), inset 0 -1px 2px var(--material-shadow), 0 4px 0 var(--button-shadow), 0 8px 12px var(--material-shadow);
+}
+.transport-button--primary {
+  background: radial-gradient(ellipse at 30% 0%, #ffffff50, transparent 60%), linear-gradient(155deg, var(--accent-light), var(--color-accent) 65%, var(--accent-dark));
+  box-shadow: inset 0 2px 2px #ffffff70, inset 0 -2px 2px #0002, 0 5px 0 var(--accent-dark), 0 10px 20px color-mix(in srgb, var(--color-accent) 22%, var(--material-shadow));
+}
+.transport-button:enabled:active { 
+  transform: translateY(2px);
+}
+.timeline { letter-spacing: .02em; }
+input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset 0 1px 2px var(--material-shadow), 0 1px 0 var(--material-highlight); }
+input[type="range"]::-webkit-slider-thumb { background: linear-gradient(145deg, var(--accent-light), var(--color-accent)); box-shadow: 0 1px 3px #0004, inset 0 1px 1px #fff8; }
+.player-deck { position: relative; z-index: 1; }
+.track-text h2 { letter-spacing: -.04em; }
+
+/* ORBIT / a listening instrument, milled aluminium and black vinyl. */
+:root[data-theme="orbit"] .app-shell {
+  background: radial-gradient(ellipse at 25% 12%, var(--material-highlight), transparent 55%), var(--color-surface);
+}
+:root[data-theme="orbit"] .app-header { border-bottom: 1px solid var(--color-line); box-shadow: 0 1px 0 var(--material-highlight); }
+:root[data-theme="orbit"] .now-playing {
+  padding: 22px 32px 28px; gap: 18px;
+  background: radial-gradient(ellipse at 50% 36%, color-mix(in srgb, var(--color-raised) 90%, var(--color-accent)), transparent 68%);
+}
+:root[data-theme="orbit"] .library-panel {
+  margin: 20px 0 20px 20px; padding: 24px 20px;
+  border: 1px solid var(--color-line); border-radius: 18px;
+  background: linear-gradient(150deg, var(--color-raised), var(--color-surface));
+  box-shadow: inset 0 1px 1px var(--material-highlight), var(--material-depth);
+}
+:root[data-theme="orbit"] .player-deck {
+  width: min(100%, 490px); padding: 18px 22px; gap: 12px;
+  border: 1px solid var(--color-line); border-radius: 24px;
+  background: linear-gradient(160deg, var(--color-raised), var(--color-panel));
+  box-shadow: inset 0 2px 0 var(--material-highlight), 0 5px 0 color-mix(in srgb, var(--color-panel), var(--color-text) 15%), var(--material-depth);
+}
+:root[data-theme="orbit"] .playback-controls { min-height: 76px; }
+:root[data-theme="orbit"] .transport-button { width: 50px; height: 50px; }
+:root[data-theme="orbit"] .transport-button--primary { width: 66px; height: 66px; }
+
+/* SOFT CERAMIC / warm porcelain, a left-hand recessed collection. */
+:root[data-theme="soft-ceramic"] .app-shell {
+  padding: 0 18px 18px;
+  background: radial-gradient(ellipse at 20% 0%, var(--material-highlight), transparent 70%), var(--color-panel);
+}
+:root[data-theme="soft-ceramic"] .app-header { border: 0; padding-inline: 16px; }
+:root[data-theme="soft-ceramic"] .app-main {
+  border: 1px solid var(--color-line); border-radius: 36px;
+  background: var(--color-surface);
+  box-shadow: inset 1px 2px 2px var(--material-highlight), 0 8px 0 color-mix(in srgb, var(--color-panel), var(--color-text) 9%), 0 16px 28px var(--material-shadow);
+}
+:root[data-theme="soft-ceramic"] .player { grid-template-columns: clamp(270px, 28vw, 320px) minmax(0, 1fr); }
+:root[data-theme="soft-ceramic"] .now-playing { grid-column: 2; grid-row: 1; padding: 20px 30px 26px; gap: 14px; }
+:root[data-theme="soft-ceramic"] .library-panel {
+  grid-column: 1; grid-row: 1; margin: 22px 0 22px 22px; padding: 24px 18px;
+  border: 1px solid var(--color-line); border-radius: 24px;
+  background: var(--color-panel);
+  box-shadow: inset 5px 5px 14px var(--material-shadow), inset -3px -3px 8px var(--material-highlight);
+}
+:root[data-theme="soft-ceramic"] .library-search { border-radius: 24px; background: var(--color-surface); }
+:root[data-theme="soft-ceramic"] .track-list li { border-radius: 17px; }
+:root[data-theme="soft-ceramic"] .track-list li.active { background: var(--color-raised); box-shadow: 3px 5px 8px var(--material-shadow), inset 1px 1px 1px var(--material-highlight); }
+:root[data-theme="soft-ceramic"] .player-deck { width: min(100%, 450px); gap: 13px; }
+:root[data-theme="soft-ceramic"] .playback-controls {
+  width: auto; min-width: 258px; min-height: 90px; padding: 8px 20px 12px; gap: 24px;
+  border: 1px solid var(--color-line); border-radius: 50px;
+  background: var(--color-surface);
+  box-shadow: inset 4px 4px 8px var(--material-shadow), inset -3px -3px 6px var(--material-highlight);
+}
+:root[data-theme="soft-ceramic"] .transport-button { border-color: transparent; width: 48px; height: 48px; box-shadow: 4px 5px 9px var(--material-shadow), -3px -3px 6px var(--material-highlight), inset 0 1px 1px var(--material-highlight); }
+:root[data-theme="soft-ceramic"] .transport-button--primary { width: 64px; height: 64px; background: linear-gradient(145deg, var(--accent-light), var(--color-accent)); }
+
+/* EDITORIAL / a boxed special edition on a bold printed grid. */
+:root[data-theme="editorial"] .app-shell { padding: 0 20px 20px; }
+:root[data-theme="editorial"] .app-header { padding: 0 4px; border-bottom: 2px solid var(--color-text); }
+:root[data-theme="editorial"] .brand h1 { font-family: Impact, "Arial Black", sans-serif; font-size: 27px; text-transform: uppercase; letter-spacing: -1px; }
+:root[data-theme="editorial"] .app-main { border: 1px solid var(--color-line); border-top: 0; }
+:root[data-theme="editorial"] .now-playing {
+  padding: 20px 26px; gap: 0;
+  background: linear-gradient(90deg, transparent 49.9%, var(--color-line) 50%, transparent 50.1%), radial-gradient(ellipse at 20% 0%, var(--color-raised), transparent 75%);
+}
+:root[data-theme="editorial"] .library-panel { border-right: 2px solid var(--color-text); background: var(--color-raised); padding: 26px 20px; }
+:root[data-theme="editorial"] .library-heading h2 { text-transform: uppercase; font-family: Consolas, monospace; font-size: 12px; letter-spacing: 2px; }
+:root[data-theme="editorial"] .track-list li { border-bottom: 1px solid var(--color-line); border-radius: 0; margin: 0; }
+:root[data-theme="editorial"] .track-list li.active { border-left: 3px solid var(--color-accent); box-shadow: none; }
+:root[data-theme="editorial"] .settings-trigger,
+:root[data-theme="editorial"] .choose-files,
+:root[data-theme="editorial"] .library-search { border-radius: 0; }
+:root[data-theme="editorial"] .player-deck {
+  width: min(100%, 720px); justify-items: start; padding: 18px 20px 14px; gap: 10px;
+  border: 1px solid var(--color-line); border-top: 3px solid var(--color-text);
+  background: var(--color-raised); box-shadow: 5px 5px 0 var(--color-line), 0 18px 30px -18px var(--material-shadow);
+}
+:root[data-theme="editorial"] .track-details { justify-content: flex-start; min-height: 44px; }
+:root[data-theme="editorial"] .track-text { text-align: left; }
+:root[data-theme="editorial"] .track-text h2 { font-size: 22px; font-weight: 800; }
+:root[data-theme="editorial"] .playback-controls { min-height: 57px; justify-content: flex-start; gap: 8px; padding: 2px 0 8px; }
+:root[data-theme="editorial"] .transport-button { width: 52px; height: 42px; border-radius: 1px; border-color: var(--color-text); box-shadow: 3px 3px 0 var(--color-text); }
+:root[data-theme="editorial"] .transport-button--primary { width: 72px; height: 42px; }
+:root[data-theme="editorial"] .transport-button--primary svg { width: 24px; height: 24px; }
+
+/* TAPE DECK / rack equipment, brushed metal and a recessed readout. */
+:root[data-theme="tape-deck"] .app-shell { padding: 0 18px 18px; background: repeating-linear-gradient(0deg, #ffffff03 0 1px, transparent 1px 3px), #252a25; }
+:root[data-theme="tape-deck"] .app-header { padding-inline: 8px; border: 0; color: #e4e9df; }
+:root[data-theme="tape-deck"] .app-label { color: #a9b2a6; }
+:root[data-theme="tape-deck"] .brand h1 { font-family: Consolas, monospace; font-size: 21px; letter-spacing: 2px; text-transform: uppercase; }
+:root[data-theme="tape-deck"] .app-main {
+  border: 2px solid color-mix(in srgb, var(--color-line), #000 15%); border-radius: 10px;
+  background: var(--color-surface); box-shadow: inset 0 2px 1px var(--material-highlight), 0 7px 0 #101510, 0 16px 25px #0005;
+}
+:root[data-theme="tape-deck"] .now-playing {
+  padding: 22px 28px; gap: 16px;
+  background: repeating-linear-gradient(0deg, #ffffff04 0 1px, #00000003 1px 3px), linear-gradient(120deg, var(--color-raised), var(--color-surface) 30%, var(--color-raised) 70%, var(--color-surface));
+}
+:root[data-theme="tape-deck"] .library-panel {
+  margin: 16px 0 16px 16px; border: 2px solid var(--color-line); border-radius: 5px;
+  background: var(--color-raised); box-shadow: inset 0 2px 6px var(--material-shadow), 0 1px 0 var(--material-highlight);
+}
+:root[data-theme="tape-deck"] .library-heading h2,
+:root[data-theme="tape-deck"] .timeline,
+:root[data-theme="tape-deck"] .mode-button { font-family: Consolas, monospace; }
+:root[data-theme="tape-deck"] .library-heading h2 { text-transform: uppercase; font-size: 14px; letter-spacing: 2px; }
+:root[data-theme="tape-deck"] .track-list li { border-radius: 3px; }
+:root[data-theme="tape-deck"] .library-search,
+:root[data-theme="tape-deck"] .choose-files { border-radius: 4px; }
+:root[data-theme="tape-deck"] .player-deck {
+  width: min(100%, 590px); gap: 10px; padding: 15px 22px 18px;
+  border: 1px solid var(--color-line); border-radius: 6px;
+  background: linear-gradient(var(--color-raised), var(--color-surface));
+  box-shadow: inset 0 1px 0 var(--material-highlight), 0 5px 0 color-mix(in srgb, var(--color-line), #000 20%), 0 10px 15px var(--material-shadow);
+}
+:root[data-theme="tape-deck"] .track-details {
+  min-height: 52px; padding: 8px 12px; border: 2px solid #1a2119; border-radius: 3px; color: #d9e6bc;
+  background: linear-gradient(125deg, #303d2a, #182217); box-shadow: inset 0 3px 6px #0009, 0 1px 1px var(--material-highlight);
+}
+:root[data-theme="tape-deck"] .track-text h2 { font-family: Consolas, monospace; font-size: 20px; letter-spacing: -.7px; text-shadow: 0 0 9px #c0e39c33; }
+:root[data-theme="tape-deck"] .track-text p { color: #acbc93; font-size: 10px; }
+:root[data-theme="tape-deck"] .playback-controls { min-height: 67px; gap: 5px; }
+:root[data-theme="tape-deck"] .transport-button { width: 70px; height: 48px; border-radius: 4px; box-shadow: inset 0 2px 0 var(--material-highlight), 0 6px 0 color-mix(in srgb, var(--color-line), #000 28%), 0 9px 6px var(--material-shadow); }
+:root[data-theme="tape-deck"] .transport-button--primary { width: 88px; height: 48px; box-shadow: inset 0 2px 0 #fff7, 0 6px 0 var(--accent-dark), 0 9px 6px var(--material-shadow); }
+:root[data-theme="tape-deck"] .transport-button--primary svg { width: 24px; height: 24px; }
+
+/* FLOATING BENTO / translucent shells above a cool spatial canvas. */
+:root[data-theme="floating-bento"] .app-shell {
+  background: radial-gradient(ellipse at 16% 26%, color-mix(in srgb, var(--color-accent) 17%, transparent), transparent 50%), radial-gradient(ellipse at 85% 86%, #8999d422, transparent 60%), var(--color-panel);
+}
+:root[data-theme="floating-bento"] .app-header { border: 0; }
+:root[data-theme="floating-bento"] .player { padding: 0 22px 22px; gap: 24px; }
+:root[data-theme="floating-bento"] .now-playing { padding: 10px 22px 16px; gap: 18px; overflow: visible; }
+:root[data-theme="floating-bento"] .library-panel {
+  margin-top: 6px; border: 1px solid var(--material-edge); border-radius: 27px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-raised) 87%, transparent), color-mix(in srgb, var(--color-surface) 78%, transparent));
+  box-shadow: inset 1px 1px 0 var(--material-highlight), 0 7px 0 color-mix(in srgb, var(--color-surface), var(--color-line) 30%), 0 25px 40px -18px var(--material-shadow);
+}
+:root[data-theme="floating-bento"] .track-list li { border-radius: 14px; }
+:root[data-theme="floating-bento"] .library-search { background: color-mix(in srgb, var(--color-panel) 65%, transparent); border-color: transparent; border-radius: 15px; }
+:root[data-theme="floating-bento"] .player-deck {
+  width: min(100%, 480px); padding: 18px 24px; gap: 11px; border: 1px solid var(--material-edge); border-radius: 28px;
+  background: linear-gradient(145deg, var(--color-raised), color-mix(in srgb, var(--color-surface), transparent 10%));
+  box-shadow: inset 0 2px 0 var(--material-highlight), 0 7px 0 color-mix(in srgb, var(--color-surface), var(--color-line) 45%), 0 22px 35px -12px var(--material-shadow);
+}
+:root[data-theme="floating-bento"] .playback-controls { min-height: 68px; gap: 16px; }
+:root[data-theme="floating-bento"] .transport-button { width: 48px; height: 48px; border-radius: 16px; }
+:root[data-theme="floating-bento"] .transport-button--primary { width: 62px; height: 56px; border-radius: 20px; }
+:root[data-theme="floating-bento"] .transport-button--primary svg { width: 25px; height: 25px; }
+
+/* PAPER CLUB / a cloth-bound listening journal on a textured desk. */
+:root[data-theme="paper-club"] .app-shell {
+  padding: 0 22px 22px;
+  background: repeating-linear-gradient(96deg, #00000003 0 1px, transparent 1px 5px), repeating-linear-gradient(4deg, #ffffff05 0 1px, transparent 1px 3px), var(--color-panel);
+}
+:root[data-theme="paper-club"] .app-header { padding-inline: 8px; border: 0; }
+:root[data-theme="paper-club"] .brand h1 { font-family: Georgia, serif; font-style: italic; }
+:root[data-theme="paper-club"] .app-main {
+  border: 1px solid var(--color-line); border-radius: 5px 14px 14px 5px;
+  background: var(--color-surface);
+  box-shadow: 2px 2px 0 var(--color-line), 4px 4px 0 var(--color-raised), 6px 6px 0 var(--color-line), 0 20px 30px var(--material-shadow);
+}
+:root[data-theme="paper-club"] .now-playing {
+  padding: 18px 30px 24px; gap: 14px;
+  background: repeating-linear-gradient(0deg, #88888805 0 1px, transparent 1px 3px), radial-gradient(ellipse at 40% 20%, var(--material-highlight), transparent 65%);
+}
+:root[data-theme="paper-club"] .library-panel {
+  margin: 20px 0 20px 18px; padding: 22px 27px 20px 20px;
+  border: 1px solid var(--color-line); border-right: 3px double var(--color-line); border-radius: 1px;
+  background: repeating-linear-gradient(0deg, transparent 0 26px, color-mix(in srgb, var(--color-line) 23%, transparent) 26px 27px), var(--color-raised);
+  box-shadow: 5px 0 12px -8px var(--material-shadow), 3px 4px 5px var(--material-shadow);
+}
+:root[data-theme="paper-club"] .library-heading h2 { font-family: Georgia, serif; font-style: italic; font-size: 22px; }
+:root[data-theme="paper-club"] .library-search,
+:root[data-theme="paper-club"] .choose-files,
+:root[data-theme="paper-club"] .settings-trigger { border-radius: 3px; box-shadow: 1px 2px 0 var(--color-line); }
+:root[data-theme="paper-club"] .track-list li { border-bottom: 1px dashed var(--color-line); border-radius: 0; margin: 0; }
+:root[data-theme="paper-club"] .track-list li.active { box-shadow: none; background: var(--color-accent-soft); }
+:root[data-theme="paper-club"] .player-deck {
+  width: min(100%, 470px); padding: 16px 22px; gap: 10px;
+  border: 1px solid var(--color-line); border-radius: 3px; background: var(--color-raised);
+  box-shadow: 1px 2px 0 var(--color-line), 2px 3px 0 var(--color-raised), 3px 4px 0 var(--color-line), 0 12px 18px -8px var(--material-shadow);
+}
+:root[data-theme="paper-club"] .track-text h2 { font-family: Georgia, serif; font-weight: 500; font-style: italic; }
+:root[data-theme="paper-club"] .playback-controls { min-height: 68px; gap: 16px; }
+:root[data-theme="paper-club"] .transport-button { width: 48px; height: 44px; border-radius: 5px; box-shadow: inset 0 1px 0 var(--material-highlight), 2px 3px 0 var(--color-line), 3px 5px 5px var(--material-shadow); }
+:root[data-theme="paper-club"] .transport-button--primary { width: 68px; height: 48px; border-radius: 5px; box-shadow: inset 0 1px 0 #fff6, 2px 3px 0 var(--accent-dark), 3px 5px 5px var(--material-shadow); }
+:root[data-theme="paper-club"] .transport-button--primary svg { width: 24px; height: 24px; }
+
+/* Compact windows retain the materials, with enough room for the actual music. */
+@media (max-height: 650px) and (min-width: 761px) {
+  :root[data-theme] .now-playing { padding: 12px 20px; gap: 12px; }
+  :root[data-theme] .player-deck { gap: 8px; padding: 12px 18px; }
+  :root[data-theme] .playback-controls { min-height: 60px; }
+  :root[data-theme] .transport-button { width: 46px; height: 42px; }
+  :root[data-theme] .transport-button--primary { width: 60px; height: 50px; }
+  :root[data-theme="soft-ceramic"] .playback-controls { min-width: 230px; padding: 6px 18px 10px; }
+  :root[data-theme="editorial"] .track-details { min-height: 38px; }
+  :root[data-theme="tape-deck"] .track-details { min-height: 44px; padding: 5px 10px; }
+  :root[data-theme="tape-deck"] .transport-button { width: 65px; }
+  :root[data-theme="tape-deck"] .transport-button--primary { width: 76px; }
+}
+@media (max-width: 760px) {
+  .header-actions { gap: 8px; }
+  .header-actions .app-label { display: none; }
+  .settings-trigger { min-width: 34px; }
+  .settings-trigger > span { display: none; }
+  :root[data-theme] .app-shell { padding: 0; }
+  :root[data-theme] .app-header { padding: 0 18px; }
+  :root[data-theme] .app-main { border: 0; border-radius: 0; box-shadow: none; }
+  :root[data-theme] .player { grid-template-columns: minmax(0, 1fr); padding: 0; gap: 0; }
+  :root[data-theme] .now-playing { grid-row: 2; grid-column: 1; gap: 13px; padding: 12px 18px 20px; overflow: hidden; }
+  :root[data-theme] .library-panel {
+    grid-row: 2; grid-column: 1; margin: 10px 12px 12px; padding: 18px 14px;
+    border-radius: 15px; min-height: 0;
+  }
+  :root[data-theme] .player-deck { width: 100%; gap: 9px; padding: 13px 16px; border-radius: 20px; }
+  :root[data-theme] .track-details { min-height: 43px; }
+  :root[data-theme] .track-text h2 { font-size: 21px; }
+  :root[data-theme] .track-text p { font-size: 11px; }
+  :root[data-theme] .playback-controls { min-height: 66px; gap: 18px; }
+  :root[data-theme] .transport-button { width: 44px; height: 44px; }
+  :root[data-theme] .transport-button--primary { width: 58px; height: 56px; }
+  :root[data-theme] .transport-button--primary svg { width: 25px; height: 25px; }
+  :root[data-theme] .player-options { gap: 6px; }
+  :root[data-theme] .mode-button { padding: 6px; font-size: 10px; }
+  :root[data-theme] .volume-control { min-width: 78px; flex-basis: 120px; }
+  :root[data-theme="soft-ceramic"] .player-deck { padding: 0 6px; border-radius: 0; }
+  :root[data-theme="soft-ceramic"] .playback-controls { min-width: 240px; min-height: 74px; padding: 6px 18px 10px; }
+  :root[data-theme="editorial"] .player-deck { border-radius: 0; padding: 12px 14px; }
+  :root[data-theme="editorial"] .playback-controls { min-height: 53px; }
+  :root[data-theme="editorial"] .transport-button { height: 35px; }
+  :root[data-theme="editorial"] .transport-button--primary { width: 65px; height: 35px; }
+  :root[data-theme="tape-deck"] .player-deck { border-radius: 5px; padding: 11px 13px; gap: 8px; }
+  :root[data-theme="tape-deck"] .track-details { padding: 5px 8px; }
+  :root[data-theme="tape-deck"] .track-text h2 { font-size: 18px; }
+  :root[data-theme="tape-deck"] .playback-controls { min-height: 58px; gap: 5px; }
+  :root[data-theme="tape-deck"] .transport-button { width: 64px; height: 42px; }
+  :root[data-theme="tape-deck"] .transport-button--primary { width: 76px; height: 42px; }
+  :root[data-theme="paper-club"] .player-deck { border-radius: 2px; }
+  :root[data-theme] .queue-player .playback-controls { min-width: 0; width: auto; min-height: 44px; gap: 10px; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+  :root[data-theme] .queue-player .transport-button { width: 30px; height: 30px; border: 0; border-radius: 50%; box-shadow: none; background: transparent; }
+  :root[data-theme] .queue-player .transport-button--primary { width: 40px; height: 40px; color: var(--color-on-accent); background: var(--color-accent); box-shadow: 0 2px 0 var(--accent-dark); }
+  :root[data-theme] .queue-player .transport-button svg { width: 17px; height: 17px; }
+  :root[data-theme] .queue-player .transport-button--primary svg { width: 20px; height: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .transport-button { transition: none; }
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DisplayTrack } from "../types";
   import AddMusicButton from "./AddMusicButton.svelte";
+  import PlaylistsPanel from "./PlaylistsPanel.svelte";
 
   type Props = {
     tracks: DisplayTrack[];
@@ -27,6 +28,8 @@
   } : Props = $props();
 
   let query = $state("");
+
+  let section = $state<"tracks" | "playlists">("tracks")
 
   let visibleTracks = $derived.by(() => {
     const term = query.trim().toLowerCase();
@@ -59,11 +62,39 @@
 <aside class="library-panel" aria-labelledby="queue-heading">
   <div class="library-heading">
     <h2 id="queue-heading">
-      Queue
-      <span class="queue-count">{query.trim() ? `${visibleTracks.length} / ${tracks.length}` : tracks.length}</span>
+      Library
+      {#if section === "tracks"}
+        <span class="queue-count">
+          {query.trim()
+            ? `${visibleTracks.length} / ${tracks.length}` 
+            : tracks.length}
+        </span>
+      {/if}
     </h2>
     <AddMusicButton {isChoosingFiles} {onadd} />
   </div>
+
+  <div class="library-tabs" role="group" aria-label="Library sections">
+    <button
+      type="button"
+      aria-pressed={section === "tracks"}
+      onclick={() => section = "tracks"}
+    >
+      Music
+    </button>
+
+    <button
+      type="button"
+      aria-pressed={section === "playlists"}
+      onclick={() => section = "playlists"}
+    >
+      Playlists
+    </button>
+  </div>
+
+  {#if section === "playlists"}
+    <PlaylistsPanel />
+  {:else}
 
   <div class="library-tools">
     <label class="library-search">
@@ -129,4 +160,37 @@
       {/each}
     </ol>
   {/if}
+  {/if}
 </aside>
+
+
+
+<style>
+  .library-tabs {
+    display: flex;
+    flex: none;
+    gap: 4px;
+    margin-bottom: 14px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #eeece6;
+  }
+
+  .library-tabs button {
+    flex: 1;
+    min-width: 0;
+    padding: 8px;
+    border: 0;
+    border-radius: 9px;
+    color: var(--color-muted);
+    background: transparent;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .library-tabs button[aria-pressed="true"] {
+    color: #191918;
+    background: var(--color-surface);
+    box-shadow: 0 1px 4px #2b211412;
+  }
+</style>

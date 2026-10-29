@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createPlayer } from "../player.svelte";
   import AddMusicButton from "./AddMusicButton.svelte";
-  import RecordArtwork from "./RecordArtwork.svelte";
+  import PlayerArtwork from "./PlayerArtwork.svelte";
+  import type { ThemeId } from "../appearance";
   import PlaybackTimeline from "./PlaybackTimeline.svelte";
   import PlaybackControls from "./PlaybackControls.svelte";
   import PlayerOptions from "./PlayerOptions.svelte";
@@ -12,12 +13,17 @@
   import { createQueueMetadata } from "../queue-metadata.svelte";
 
 
+  let { theme = "orbit" }: { theme?: ThemeId } = $props();
+
   const player = createPlayer();
   const queueMetadata = createQueueMetadata(
     () => player.tracks,
   );
   const trackMetadata = createTrackMetadata(
     () => player.currentTrack?.path ?? null,
+    () => player.isShuffling || player.currentIndex < 0
+      ? null
+      : player.tracks[player.currentIndex + 1]?.path ?? null,
   );
   const currentTags = $derived(
     trackMetadata.data ?? queueMetadata.tracks[player.currentIndex] ?? null,
@@ -84,9 +90,27 @@
     <AddMusicButton isChoosingFiles={player.isChoosingFiles} onadd={player.chooseFiles} />
   </div>
 
+  <TrackList
+    tracks={queueMetadata.tracks}
+    isIndexing={queueMetadata.isIndexing}
+    metadataError={queueMetadata.error}
+    currentIndex={player.currentIndex}
+    isChoosingFiles={player.isChoosingFiles}
+    onadd={player.chooseFiles}
+    onselect={player.playTrack}
+    onremove={player.removeTrack}
+    onclear={player.clearLibrary}
+  />
+
   <section class="now-playing" aria-labelledby="track-heading">
     <div class="record-stage">
-      <RecordArtwork progress={player.progress} />
+      <PlayerArtwork
+        {theme}
+        title={displayTitle}
+        coverUrl={trackMetadata.data?.coverUrl ?? null}
+        coverStatus={trackMetadata.coverStatus}
+        isPlaying={player.isPlaying}
+      />
     </div>
 
     <div class="player-deck">
@@ -95,6 +119,8 @@
         artist={currentTags?.artist ?? null}
         album={currentTags?.album ?? null}
         coverUrl={trackMetadata.data?.coverUrl ?? null}
+        coverStatus={trackMetadata.coverStatus}
+        showCover={theme === "tape-deck" && player.currentTrack !== null}
         isLoading={trackMetadata.isLoading}
         error={trackMetadata.error}
         status={player.currentTrack
@@ -135,18 +161,6 @@
       {/if}
     </div>
   </section>
-
-  <TrackList
-    tracks={queueMetadata.tracks}
-    isIndexing={queueMetadata.isIndexing}
-    metadataError={queueMetadata.error}
-    currentIndex={player.currentIndex}
-    isChoosingFiles={player.isChoosingFiles}
-    onadd={player.chooseFiles}
-    onselect={player.playTrack}
-    onremove={player.removeTrack}
-    onclear={player.clearLibrary}
-  />
 
   <div class="queue-player" style:--progress={`${player.progress * 100}%`}>
     <div class="queue-track-info">

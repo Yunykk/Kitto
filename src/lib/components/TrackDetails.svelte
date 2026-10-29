@@ -1,9 +1,13 @@
 <script lang="ts">
+    import type { CoverStatus } from "../types";
+    import CoverArtwork from "./CoverArtwork.svelte";
     type Props = {
         title: string;
         artist: string | null;
         album: string | null;
         coverUrl: string | null;
+        coverStatus: CoverStatus;
+        showCover: boolean;
         isLoading: boolean;
         error: string;
         status: string;
@@ -14,12 +18,12 @@
         artist,
         album,
         coverUrl,
+        coverStatus,
+        showCover,
         isLoading,
         error,
         status,
     }: Props = $props();
-
-    let failedCover = $state<string | null> (null);
 
     const credits = $derived(
         [artist, album].filter(Boolean).join(" · "),
@@ -34,17 +38,8 @@
 
 
 <div class="track-details" aria-busy={isLoading}>
-    {#if coverUrl && coverUrl !== failedCover}
-        <img
-            class="track-cover"
-            src={coverUrl}
-            alt=""
-            width="44"
-            height="44"
-            onerror={() => {
-                failedCover = coverUrl;
-            }}
-        />
+    {#if showCover}
+        <div class="track-cover"><CoverArtwork {coverUrl} {coverStatus} /></div>
     {/if}
 
     <div class="track-text">
@@ -75,7 +70,7 @@
         flex: 0 0 44px;
         width: 44px;
         height: 44px;
-        object-fit: cover;
+        overflow: hidden;
         border-radius: 8px;
     }
 
@@ -97,7 +92,7 @@
     p {
         margin: 5px 0 0;
         overflow: hidden;
-        color: #77716a;
+        color: var(--color-muted);
         font-size: 12px;
         line-height: 1.4;
         text-overflow: ellipsis;

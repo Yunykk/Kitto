@@ -1,0 +1,49 @@
+:root {
+    --motion-hover: 140ms;
+    --motion-press: 50ms;
+    --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root button {
+    transition-property:
+        background-color,
+        border-color,
+        color,
+        box-shadow,
+        opacity,
+        filter,
+        transform;
+    transition-duration: var(--motion-hover);
+    transition-timing-function: var(--motion-ease);
+}
+
+:root button:enabled:active {
+    transition-duration: var(--motion-press);
+}
+
+
+.track-list li,
+.library-seatch {
+    transition: 
+        background-color var(--motion-hover) var(--motion-ease),
+        border-color var(--motion-hover) var(--motion-ease),
+        box-shadow var(--motion-hover) var(--motion-ease);
+}
+
+:root input {
+    transition: 
+        border-color var(--motion-hover) var(--motion-ease)
+        box-shadow var(--motion-hover) var(--motion-ease);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --motion-hover: 0ms;
+        --motion-press: 0ms;
+    }
+
+    :root .transport-button:enabled:active {
+        transform: none;
+    }
+}

@@ -13,6 +13,8 @@ export type TrackTags = {
   album: string | null;
 };
 
+export type CoverStatus = "loading" | "ready" | "missing" | "error";
+
 export type DisplayTrack = QueueTrack & {
   fileName: string;
   artist: string | null;
