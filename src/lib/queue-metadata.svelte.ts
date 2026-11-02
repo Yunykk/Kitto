@@ -25,14 +25,16 @@ export function createQueueMetadata(
         }),
     );
 
+    const pathsKey = $derived(JSON.stringify(getTracks().map((track) => track.path)));
+
     async function indexTracks(
-        queue: QueueTrack[],
+        queue: string[],
         signal: AbortSignal,
     ) {
         try {
-            for (const track of queue) {
+            for (const path of queue) {
                 if (signal.aborted) return;
-                if (cache.has(track.path)) continue;
+                if (cache.has(path)) continue;
 
                 const request = new AbortController();
                 const cancel = () => request.abort();
@@ -43,7 +45,7 @@ export function createQueueMetadata(
 
                 try {
                     const result = await readTrackMetadata(
-                        track.path,
+                        path,
                         request.signal,
                         false,
                     );
@@ -51,7 +53,7 @@ export function createQueueMetadata(
                     if (signal.aborted) return;
 
 
-                    cache.set(track.path, {
+                    cache.set(path, {
                         title: result.title,
                         artist: result.artist,
                         album: result.album,
@@ -74,8 +76,8 @@ export function createQueueMetadata(
 
 
     $effect(() => {
-        const queue = getTracks().slice();
-        const paths = new Set(queue.map((track) => track.path));
+        const queue = JSON.parse(pathsKey) as string[];
+        const paths = new Set(queue);
         const controller = new AbortController();
 
         failedCount = 0;

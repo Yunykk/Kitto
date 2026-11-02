@@ -23,7 +23,7 @@
 
 
 .track-list li,
-.library-seatch {
+.library-search {
     transition: 
         background-color var(--motion-hover) var(--motion-ease),
         border-color var(--motion-hover) var(--motion-ease),
@@ -32,7 +32,7 @@
 
 :root input {
     transition: 
-        border-color var(--motion-hover) var(--motion-ease)
+        border-color var(--motion-hover) var(--motion-ease),
         box-shadow var(--motion-hover) var(--motion-ease);
 }
 

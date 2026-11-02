@@ -36,9 +36,10 @@ const { createPlayer } = await import(compile("../src/lib/player.svelte.ts", {
     export const saveSettings = settings => { h().settings = settings; };
   `),
   "./library": stub(`
-    export const pickTracks = async () => [];
+    export const pathKey = path => /^[a-z]:/i.test(path) ? path.replaceAll(String.fromCharCode(92), "/").toLowerCase() : path;
+    export const pickTracks = async () => { if (h().pickError) throw new Error("Picker failed"); return h().picked ?? []; };
     export const loadLibrary = () => structuredClone(h().library);
-    export const saveLibrary = value => { h().saved = JSON.parse(JSON.stringify(value)); return true; };
+    export const saveLibrary = value => { if (h().saveError) return false; h().saved = JSON.parse(JSON.stringify(value)); return true; };
   `),
   "./audio": stub(`
     export const loadAudio = (path, position) => {
@@ -75,7 +76,7 @@ afterEach(() => {
   delete globalThis.__kittoPlayerTest;
 });
 
-function setup() {
+function setup(overrides = {}) {
   globalThis.window = new EventTarget();
   const harness = globalThis.__kittoPlayerTest = {
     library: {
@@ -85,6 +86,7 @@ function setup() {
     },
     progress: { currentTime: 0, duration: 0 },
     loaded: [], requests: [], pauses: 0,
+    ...overrides,
   };
   const player = createPlayer();
   cleanup = harness.mount();
@@ -171,4 +173,101 @@ test("Repeat one restarts the current track without advancing the queue", async 
   assert.equal(player.currentTrack.id, "a");
   assert.equal(harness.progress.currentTime, 0);
   assert.equal(harness.requests.length, 2);
+});
+
+test("a playlist queue is a snapshot independent from the complete library", () => {
+  const { player } = setup();
+  const ids = ["b"];
+  assert.equal(player.playCollection(ids, "Focus"), true);
+  ids.push("a");
+  assert.deepEqual(player.tracks.map(track => track.id), ["b"]);
+  assert.deepEqual(player.library.map(track => track.id), ["a", "b"]);
+  assert.equal(player.queueName, "Focus");
+  assert.equal(player.canNext, false);
+});
+
+test("playlist file imports reuse canonical IDs and leave the playing queue unchanged", async () => {
+  const { player, harness } = setup();
+  player.playCollection(["b"], "Focus");
+  harness.picked = [
+    { id: "unused", title: "a", path: "a.wav" },
+    { id: "c", title: "c", path: "c.wav" },
+    { id: "duplicate", title: "c", path: "c.wav" },
+  ];
+  assert.deepEqual(await player.choosePlaylistFiles(), ["a", "c"]);
+  assert.deepEqual(player.library.map(track => track.id), ["a", "b", "c"]);
+  assert.deepEqual(player.tracks.map(track => track.id), ["b"]);
+  assert.equal(harness.requests.length, 1);
+  assert.deepEqual(harness.saved.queue.trackIds, ["b"]);
+});
+
+test("clearing or removing items from the queue does not delete library tracks", () => {
+  const { player, harness } = setup();
+  player.removeFromQueue("a");
+  assert.deepEqual(player.tracks.map(track => track.id), ["b"]);
+  assert.equal(player.library.length, 2);
+  player.clearQueue();
+  assert.equal(player.tracks.length, 0);
+  assert.equal(player.library.length, 2);
+  assert.equal(player.currentTrack, null);
+  assert.deepEqual(harness.saved.queue.trackIds, []);
+  assert.equal(harness.saved.tracks.length, 2);
+});
+
+test("a saved playlist queue restores its order and position without autoplay", () => {
+  const { player, harness } = setup({ library: {
+    tracks: ["a", "b", "c"].map(id => ({ id, title: id, path: id + ".wav" })),
+    currentTrackId: "b", position: 17,
+    queue: { trackIds: ["c", "b"], name: "Focus", isLibrary: false },
+  } });
+  assert.deepEqual(player.tracks.map(track => track.id), ["c", "b"]);
+  assert.equal(player.library.length, 3);
+  assert.equal(player.currentTrack.id, "b");
+  assert.equal(player.displayTime, 17);
+  assert.equal(harness.requests.length, 0);
+});
+
+test("a saved empty queue stays empty while the library remains available", () => {
+  const { player } = setup({ library: {
+    tracks: [{ id: "a", title: "a", path: "a.wav" }], currentTrackId: null, position: 0,
+    queue: { trackIds: [], name: "Queue", isLibrary: false },
+  } });
+  assert.equal(player.library.length, 1);
+  assert.equal(player.tracks.length, 0);
+});
+
+test("cancelled and failed imports return distinct results and reset the busy state", async () => {
+  const { player, harness } = setup();
+  assert.deepEqual(await player.chooseFiles(), []);
+  harness.pickError = true;
+  assert.equal(await player.chooseFiles(), null);
+  assert.equal(player.isChoosingFiles, false);
+  harness.pickError = false;
+  harness.saveError = true;
+  harness.picked = [{ id: "c", title: "c", path: "c.wav" }];
+  assert.equal(await player.choosePlaylistFiles(), null);
+  assert.match(player.playbackError, /save your library/);
+});
+
+test("Next, repeat, and manual Music selection use the active queue", () => {
+  const { player } = setup();
+  player.playCollection(["b"], "Focus");
+  player.cycleRepeat();
+  player.nextTrack();
+  assert.equal(player.currentTrack.id, "b");
+  player.playLibraryTrack("a");
+  assert.deepEqual(player.tracks.map(track => track.id), ["a", "b"]);
+  assert.equal(player.queueName, "Music");
+  player.nextTrack();
+  assert.equal(player.currentTrack.id, "b");
+});
+
+test("an unreadable library is not overwritten or treated as ready for playlist cleanup", async () => {
+  const { player, harness } = setup({ library: {
+    tracks: [], currentTrackId: null, position: 0, readError: true,
+  } });
+  assert.equal(player.isReady, false);
+  assert.match(player.playbackError, /saved data was kept/);
+  assert.equal(await player.chooseFiles(), null);
+  assert.equal(harness.saved, undefined);
 });

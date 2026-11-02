@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createPlayer } from "../player.svelte";
+  import { createPlaylists } from "../playlists.svelte";
   import AddMusicButton from "./AddMusicButton.svelte";
   import PlayerArtwork from "./PlayerArtwork.svelte";
   import type { ThemeId } from "../appearance";
@@ -11,13 +12,29 @@
   import TrackDetails from "./TrackDetails.svelte";
   import { createMediaSession } from "../media-session.svelte";
   import { createQueueMetadata } from "../queue-metadata.svelte";
+  import type { FavoritesController } from "../favorites.svelte";
 
+  let {
+    theme = "orbit",
+    favorites,
+  } : {
+    theme?: ThemeId;
+    favorites: FavoritesController;
+  } = $props();
 
-  let { theme = "orbit" }: { theme?: ThemeId } = $props();
 
   const player = createPlayer();
-  const queueMetadata = createQueueMetadata(
-    () => player.tracks,
+  const collections = createPlaylists(() => player.isReady ? player.library.map((track) => track.id) : null);
+  $effect(() => {
+    if (!player.isReady || !favorites.isReady) return;
+
+    favorites.prune(
+      player.library.map((track) => track.id),
+    );
+  });
+
+  const libraryMetadata = createQueueMetadata(
+    () => player.library,
   );
   const trackMetadata = createTrackMetadata(
     () => player.currentTrack?.path ?? null,
@@ -26,12 +43,12 @@
       : player.tracks[player.currentIndex + 1]?.path ?? null,
   );
   const currentTags = $derived(
-    trackMetadata.data ?? queueMetadata.tracks[player.currentIndex] ?? null,
+    trackMetadata.data ?? libraryMetadata.tracks.find((track) => track.id === player.currentTrack?.id) ?? null,
   );
   const displayTitle = $derived(
     currentTags?.title ??
     player.currentTrack?.title ??
-    "Your library is empty",
+    (player.library.length > 0 ? "No track selected" : "Your library is empty"),
   );
 
   createMediaSession(
@@ -83,23 +100,33 @@
       <button type="button" aria-label="Show player" aria-pressed={view === "player"} onclick={() => view = "player"}>
         Player
       </button>
-      <button type="button" aria-label="Show queue" aria-pressed={view === "queue"} onclick={() => view = "queue"}>
-        Queue <span class="view-count">{player.tracks.length}</span>
+      <button type="button" aria-label="Show library" aria-pressed={view === "queue"} onclick={() => view = "queue"}>
+        Library <span class="view-count">{player.library.length}</span>
       </button>
     </div>
     <AddMusicButton isChoosingFiles={player.isChoosingFiles} onadd={player.chooseFiles} />
   </div>
 
   <TrackList
-    tracks={queueMetadata.tracks}
-    isIndexing={queueMetadata.isIndexing}
-    metadataError={queueMetadata.error}
-    currentIndex={player.currentIndex}
+    tracks={libraryMetadata.tracks}
+    queue={player.tracks}
+    queueName={player.queueName}
+    currentId={player.currentTrack?.id ?? null}
+    isPlaying={player.isPlaying}
+    isIndexing={libraryMetadata.isIndexing}
+    metadataError={libraryMetadata.error}
     isChoosingFiles={player.isChoosingFiles}
+    {collections}
+    {favorites}
     onadd={player.chooseFiles}
-    onselect={player.playTrack}
+    onfiles={player.choosePlaylistFiles}
+    onselect={player.playLibraryTrack}
+    onqueueselect={player.playTrack}
+    onplayplaylist={player.playCollection}
     onremove={player.removeTrack}
+    onremovequeue={player.removeFromQueue}
     onclear={player.clearLibrary}
+    onclearqueue={player.clearQueue}
   />
 
   <section class="now-playing" aria-labelledby="track-heading">
@@ -116,6 +143,12 @@
     <div class="player-deck">
       <TrackDetails
         title={displayTitle}
+        isFavorite={favorites.has(player.currentTrack?.id ?? "")}
+        canFavorite={favorites.isReady && player.currentTrack !== null}
+        onfavorite={() => {
+          const id = player.currentTrack?.id;
+          if (id) favorites.toggle(id);
+        }}
         artist={currentTags?.artist ?? null}
         album={currentTags?.album ?? null}
         coverUrl={trackMetadata.data?.coverUrl ?? null}
@@ -125,7 +158,7 @@
         error={trackMetadata.error}
         status={player.currentTrack
           ? `${player.isPlaying ? "Playing" : "Paused"} · Track ${player.currentIndex + 1} of ${player.tracks.length}`
-          : "Add music to start listening"}
+          : player.library.length > 0 ? "Choose a track or playlist" : "Add music to start listening"}
       />
       <PlaybackTimeline
         time={player.displayTime}
@@ -158,6 +191,12 @@
 
       {#if player.playbackError}
         <p class="playback-error" role="alert" title={player.playbackError}>{player.playbackError}</p>
+      {/if}
+
+      {#if favorites.error}
+          <p class="playback-error" role="alert">
+            {favorites.error}
+          </p>
       {/if}
     </div>
   </section>

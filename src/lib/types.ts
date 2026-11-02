@@ -5,6 +5,8 @@ export type Track = {
 
 export type QueueTrack = Track & {
   path: string;
+  addedAt?: number;
+  lastPlayedAt?: number;
 };
 
 export type TrackTags = {

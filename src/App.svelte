@@ -5,8 +5,10 @@
   import { createAppearance } from "./lib/appearance.svelte";
   import { isTauri } from "@tauri-apps/api/core";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { createFavorites } from "./lib/favorites.svelte";
 
   const appearance = createAppearance();
+  const favorites = createFavorites();
   let settingsOpen = $state(false);
 
   $effect(() => {
@@ -49,7 +51,7 @@
   </header>
 
   <main class="app-main">
-    <Player theme={appearance.theme} />
+    <Player theme={appearance.theme} {favorites} />
   </main>
 </div>
 

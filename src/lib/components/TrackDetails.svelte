@@ -1,6 +1,8 @@
 <script lang="ts">
     import type { CoverStatus } from "../types";
     import CoverArtwork from "./CoverArtwork.svelte";
+    import FavoritesButton from "./FavoritesButton.svelte";
+
     type Props = {
         title: string;
         artist: string | null;
@@ -11,6 +13,9 @@
         isLoading: boolean;
         error: string;
         status: string;
+        isFavorite: boolean;
+        canFavorite: boolean;
+        onfavorite: () => void;
     };
 
     let {
@@ -23,6 +28,9 @@
         isLoading,
         error,
         status,
+        isFavorite,
+        canFavorite,
+        onfavorite
     }: Props = $props();
 
     const credits = $derived(
@@ -39,14 +47,24 @@
 
 <div class="track-details" aria-busy={isLoading}>
     {#if showCover}
-        <div class="track-cover"><CoverArtwork {coverUrl} {coverStatus} /></div>
+        <div class="track-cover">
+            <CoverArtwork {coverUrl} {coverStatus} />
+        </div>
     {/if}
 
     <div class="track-text">
-        <h2 id="track-heading" title={title}>
-            {title}
-        </h2>
+        <div class="track-title-row">
+            <h2 id="track-heading" title={title}>
+                {title}
+            </h2>
 
+            <FavoritesButton
+                liked={isFavorite}
+                disabled={!canFavorite}
+                ontoggle={onfavorite}
+            />
+        </div>
+        
         <p title={subtitle}>
             {subtitle}
         </p>
@@ -77,6 +95,7 @@
     .track-text {
         min-width: 0;
         text-align: center;
+        flex: 1;
     }
 
     h2 {
@@ -97,5 +116,17 @@
         line-height: 1.4;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .track-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .track-title-row h2{
+        min-width: 0;
     }
 </style>

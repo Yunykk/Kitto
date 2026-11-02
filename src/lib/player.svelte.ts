@@ -8,7 +8,7 @@ import {
   saveSettings,
   type RepeatMode,
 } from "./settings";
-import { pickTracks, loadLibrary, saveLibrary } from "./library";
+import { pickTracks, loadLibrary, saveLibrary, pathKey } from "./library";
 import {
   loadAudio,
   unloadAudio,
@@ -24,7 +24,11 @@ import {
 import { createPlaybackOrder } from "./playback-order.svelte";
 
 export function createPlayer() {
+  let library = $state<QueueTrack[]>([]);
   let tracks = $state<QueueTrack[]>([]);
+  let queueName = $state("Music");
+  let queueIsLibrary = $state(true);
+  let isReady = $state(false);
 
   const order = createPlaybackOrder(
     () => tracks.map((track) => track.id),
@@ -75,7 +79,8 @@ export function createPlayer() {
     if (!isTauri() || !libraryReady) return;
 
     const saved = saveLibrary({
-      tracks,
+      tracks: library,
+      queue: { trackIds: tracks.map((track) => track.id), name: queueName, isLibrary: queueIsLibrary },
       currentTrackId: currentTrack?.id ?? null,
       position: currentTrack ? getAudioProgress().currentTime : 0,
     });
@@ -84,41 +89,76 @@ export function createPlayer() {
     lastSavedAt = performance.now();
   }
 
-  async function chooseFiles() {
-    if (isChoosingFiles) return;
-
+  async function importFiles(appendToQueue: boolean): Promise<string[] | null> {
+    if (isChoosingFiles || disposed) return [];
+    if (isTauri() && !libraryReady) return null;
     isChoosingFiles = true;
     playbackError = "";
 
     try {
       const selected = await pickTracks();
+      if (disposed || selected.length === 0) return [];
 
-      if (disposed || selected.length === 0) return;
-
-      const existingPaths = new Set(tracks.map((track) => track.path));
-      const added = selected.filter(
-        (track) => !existingPaths.has(track.path),
-      );
-
-      if (added.length === 0) return;
-
-      tracks = [...tracks, ...added];
-
-      if (currentIndex < 0) {
-        selectTrack(0);
-      } else {
-        persistLibrary();
+      const byPath = new Map(library.map((track) => [pathKey(track.path), track]));
+      const added: QueueTrack[] = [];
+      const imported: QueueTrack[] = [];
+      for (const candidate of selected) {
+        const key = pathKey(candidate.path);
+        let track = byPath.get(key);
+        if (!track) {
+          track = { ...candidate, addedAt: candidate.addedAt ?? Date.now() };
+          byPath.set(key, track);
+          added.push(track);
+        }
+        imported.push(track);
       }
+
+      if (added.length > 0) library = [...library, ...added];
+      if (appendToQueue && (queueIsLibrary || tracks.length === 0)) {
+        tracks = [...library];
+        queueIsLibrary = true;
+        queueName = "Music";
+        if (currentIndex < 0 && tracks.length > 0) selectTrack(0);
+      } else if (!appendToQueue && added.length > 0) {
+        queueIsLibrary = false;
+      }
+
+      persistLibrary();
+      return storageError ? null : [...new Set(imported.map((track) => track.id))];
     } catch (error) {
-      if (!disposed) {
-        playbackError =
-          error instanceof Error
-            ? error.message
-            : "Could not choose audio files.";
-      }
+      if (!disposed) playbackError = error instanceof Error
+        ? error.message : "Could not choose audio files.";
+      return null;
     } finally {
       isChoosingFiles = false;
     }
+  }
+
+  function playCollection(
+    ids: string[],
+    name: string,
+    startId: string | null = null,
+    isLibrary = false,
+  ): boolean {
+    const byId = new Map(library.map((track) => [track.id, track]));
+    const next = [...new Set(ids)].flatMap((id) => {
+      const track = byId.get(id);
+      return track ? [track] : [];
+    });
+    if (next.length === 0) return false;
+
+    order.clear();
+    tracks = next;
+    queueName = name;
+    queueIsLibrary = isLibrary;
+    const index = Math.max(0, next.findIndex((track) => track.id === startId));
+    order.select(next[index].id, true);
+    selectTrack(index, true);
+    return true;
+  }
+
+  function playLibraryTrack(id: string) {
+    playCollection(library.map((track) => track.id), "Music", id, true);
   }
 
   function selectTrack(
@@ -161,6 +201,10 @@ export function createPlayer() {
 
       if (requestId === playbackRequestId) {
         isPlaying = true;
+        const id = currentTrack?.id;
+        library = library.map((track) => track.id === id
+          ? { ...track, lastPlayedAt: Date.now() } : track);
+        persistLibrary();
       }
     } catch {
       if (requestId === playbackRequestId) {
@@ -276,11 +320,13 @@ export function createPlayer() {
     seekChanged = false;
   }
 
-  function clearLibrary() {
+  function clearQueue() {
     playbackRequestId += 1;
     cancelSeek();
 
     tracks = [];
+    queueName = "Queue";
+    queueIsLibrary = false;
     order.clear();
     currentTime = 0;
     seekTime = 0;
@@ -293,10 +339,22 @@ export function createPlayer() {
     persistLibrary();
   }
 
+  function clearLibrary() {
+    library = [];
+    clearQueue();
+  }
+
   function removeTrack(id: string) {
+    if (!library.some((track) => track.id === id)) return;
+    library = library.filter((track) => track.id !== id);
+    if (!removeFromQueue(id, false)) persistLibrary();
+  }
+
+  function removeFromQueue(id: string, detach = true): boolean {
     const removedIndex = tracks.findIndex((track) => track.id === id);
 
-    if (removedIndex < 0) return;
+    if (removedIndex < 0) return false;
+    if (detach) queueIsLibrary = false;
 
     const selectedId = currentTrack?.id;
     const continuePlaying = isPlaying || isStarting;
@@ -304,8 +362,8 @@ export function createPlayer() {
     tracks = tracks.filter((track) => track.id !== id);
 
     if (tracks.length === 0) {
-      clearLibrary();
-      return;
+      clearQueue();
+      return true;
     }
 
     if (id === selectedId) {
@@ -317,6 +375,7 @@ export function createPlayer() {
 
     order.finishCycle(repeatMode === "all");
     persistSettings();
+    return true;
   }
 
   function seekBy(seconds: number) {
@@ -383,8 +442,17 @@ export function createPlayer() {
 
     if (isTauri()) {
       const saved = loadLibrary();
-      tracks = saved.tracks;
-      libraryReady = true;
+      library = saved.tracks;
+      const byId = new Map(library.map((track) => [track.id, track]));
+      queueIsLibrary = saved.queue?.isLibrary ?? true;
+      queueName = saved.queue?.name ?? "Music";
+      tracks = queueIsLibrary || !saved.queue ? [...library]
+        : saved.queue.trackIds.flatMap((id) => {
+          const track = byId.get(id);
+          return track ? [track] : [];
+        });
+      libraryReady = !saved.readError;
+      if (saved.readError) storageError = "Could not load your library. Your saved data was kept.";
 
       const savedIndex = tracks.findIndex(
         (track) => track.id === saved.currentTrackId,
@@ -411,6 +479,8 @@ export function createPlayer() {
           console.error("Could not register close handler.", error);
         });
     }
+
+    isReady = libraryReady;
 
     const removeShortcuts = registerPlayerShortcuts({
       togglePlayback,
@@ -451,6 +521,9 @@ export function createPlayer() {
 
   return {
     get tracks() { return tracks; },
+    get library() { return library; },
+    get queueName() { return queueName; },
+    get isReady() { return isReady; },
     get currentIndex() { return currentIndex; },
     get currentTrack() { return currentTrack; },
     get playbackError() { return playbackError || storageError; },
@@ -467,10 +540,15 @@ export function createPlayer() {
     toggleShuffle,
     nextTrack: () => navigate("next"),
     previousTrack: () => navigate("previous"),
-    chooseFiles,
+    chooseFiles: () => importFiles(true),
+    choosePlaylistFiles: () => importFiles(false),
+    playCollection,
+    playLibraryTrack,
     selectTrack,
     playTrack,
     removeTrack,
+    removeFromQueue,
+    clearQueue,
     clearLibrary,
     togglePlayback,
     handleVolumeChange,

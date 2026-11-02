@@ -29,7 +29,7 @@ export function registerPlayerShortcuts(actions: PlayerShortcuts) {
 
         if (
             target?.closest(
-                "dialog[open], input, textarea, select, [contenteditable]:not([contenteditable='false'])",
+                "dialog[open], [popover]:popover-open, summary, input, textarea, select, [contenteditable]:not([contenteditable='false'])",
             )
         ) {
             return;
