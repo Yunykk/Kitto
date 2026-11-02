@@ -5,7 +5,6 @@
     import { filterAndSort, type CollectionItem } from "../collection";
     import CollectionToolbar from "./CollectionToolbar.svelte";
     import CollectionList from "./CollectionList.svelte";
-    import FavoritesButton from "./FavoritesButton.svelte";
 
     let {
         tracks,
@@ -89,7 +88,7 @@
             onclick={() => play()}
         >
             Play
-        </button>  
+        </button>
     </div>
 
     {#if favorites.error}
@@ -127,16 +126,9 @@
                 label="Liked songs"
                 activeId={currentId}
                 {isPlaying}
+                {favorites}
                 onopen={(id) => play(id)}
-            >
-                {#snippet actions(item)}
-                    <FavoritesButton
-                        liked={favorites.has(item.id)}
-                        disabled={!favorites.isReady}
-                        ontoggle={() => favorites.toggle(item.id)}
-                    />
-                {/snippet}
-            </CollectionList>
+            />
         {/if}
     {/if}
 </div>

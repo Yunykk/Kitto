@@ -1,4 +1,6 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { createEqualizerEngine } from "./equalizer-engine";
+import type { EqualizerSettings } from "./equalizer";
 
 export type AudioProgress = {
   currentTime: number;
@@ -6,7 +8,12 @@ export type AudioProgress = {
 };
 
 const audio = new Audio();
+audio.crossOrigin = "anonymous";
 audio.preload = "metadata";
+
+const equalizer = createEqualizerEngine(audio);
+
+let playRequestId = 0;
 
 let pendingPosition: number | null = null;
 
@@ -38,26 +45,45 @@ function subscribe(events: string[], callback: () => void) {
   };
 }
 
+export function configureEqualizer(settings: EqualizerSettings) {
+  equalizer.configure(settings);
+}
+
+
 export function loadAudio(path: string, position = 0) {
-  audio.pause();
+  pauseAudio();
   pendingPosition = Number.isFinite(position) ? Math.max(0, position) : 0;
   audio.src = convertFileSrc(path);
   audio.load();
 }
 
 export function unloadAudio() {
-  audio.pause();
+  pauseAudio();
   pendingPosition = null;
   audio.removeAttribute("src");
   audio.load();
 }
 
-export function playAudio() {
-  return audio.play();
+export async function playAudio() {
+  const requestId = ++playRequestId;
+  try {
+    await Promise.all([equalizer.resume(), audio.play()]);
+  } catch (error) {
+    if (requestId === playRequestId) audio.pause();
+    throw error;
+  }
 }
 
 export function pauseAudio() {
+  playRequestId += 1;
   audio.pause();
+}
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    unloadAudio();
+    equalizer.dispose();
+  });
 }
 
 export function setVolume(value: number) {

@@ -57,7 +57,7 @@
   });
 
   const collectionCount = $derived(
-    collections.playlists.length + 
+    collections.playlists.length +
         (favorites.separateTab ? 0 : 1),
   );
 
@@ -204,8 +204,15 @@
       {:else if visibleTracks.length === 0}
         <div class="queue-empty" role="status"><h3>No matching tracks</h3><p>Try a different name.</p></div>
       {:else}
-        <CollectionList items={visibleTracks} view={preferences.music.view} label="Playlist tracks"
-          activeId={currentId} {isPlaying} onopen={(id) => play(selected, id)}>
+        <CollectionList
+            items={visibleTracks}
+            view={preferences.music.view}
+            label="Playlist tracks"
+            activeId={currentId}
+            {isPlaying}
+            {favorites}
+            onopen={(id) => play(selected, id)}
+        >
           {#snippet actions(item)}
             <PopoverButton label={`Actions for ${item.title}`}>
               {#snippet children(close)}

@@ -1,14 +1,21 @@
 <script lang="ts">
   import { accentPresets, normalizeHex, themes } from "../appearance";
   import type { AppearanceController } from "../appearance.svelte";
+  import type { FavoritesController } from "../favorites.svelte";
 
   type Props = {
     appearance: AppearanceController;
+    favorites: FavoritesController;
     open: boolean;
     onclose: () => void;
   };
 
-  let { appearance, open, onclose }: Props = $props();
+  let {
+    appearance,
+    favorites,
+    open,
+    onclose,
+  }: Props = $props();
   let dialog = $state<HTMLDialogElement>();
   let hex = $state("");
   let hexError = $state("");
@@ -23,6 +30,16 @@
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
   });
+
+  function changeFavoritesTab(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+
+    const saved = favorites.setSeparateTab(input.checked);
+
+    if (!saved) {
+      input.checked = favorites.separateTab;
+    }
+  }
 
   function submitHex(event: SubmitEvent) {
     event.preventDefault();
@@ -64,6 +81,30 @@
   </header>
 
   <div class="settings-content">
+
+    <fieldset
+      class="settings-section"
+      disabled={!favorites.isReady}
+    >
+      <legend>Library</legend>
+
+      <label class="library-option">
+        <input
+          type="checkbox"
+          checked={favorites.separateTab}
+          onchange={changeFavoritesTab}
+        />
+
+        <span>Show Liked songs as a tab</span>
+      </label>
+
+      {#if favorites.error}
+        <p class="settings-error" role="alert">
+          {favorites.error}
+        </p>
+      {/if}
+    </fieldset>
+
     <fieldset class="settings-section" disabled={!appearance.isReady}>
       <legend>Player theme</legend>
       <div class="theme-grid">
@@ -238,5 +279,28 @@
     .theme-preview { height: 92px; }
     .custom-accent { align-items: stretch; flex-direction: column; gap: 12px; }
     .hex-input { flex: 1; width: auto; }
+  }
+
+    .library-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    color: var(--color-text);
+    background: var(--color-raised);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .library-option input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--color-accent);
   }
 </style>

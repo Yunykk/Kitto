@@ -13,6 +13,9 @@
   import { createMediaSession } from "../media-session.svelte";
   import { createQueueMetadata } from "../queue-metadata.svelte";
   import type { FavoritesController } from "../favorites.svelte";
+  import { createEqualizer } from "../equalizer.svelte";
+  import { configureEqualizer } from "../audio";
+  import EqualizerPanel from "./EqualizerPanel.svelte";
 
   let {
     theme = "orbit",
@@ -24,6 +27,8 @@
 
 
   const player = createPlayer();
+  const equalizer = createEqualizer(configureEqualizer);
+  let equalizerOpen = $state(false);
   const collections = createPlaylists(() => player.isReady ? player.library.map((track) => track.id) : null);
   $effect(() => {
     if (!player.isReady || !favorites.isReady) return;
@@ -184,6 +189,8 @@
         isShuffling={player.isShuffling}
         repeatMode={player.repeatMode}
         volume={player.volume}
+        equalizerEnabled={equalizer.settings.enabled}
+        onequalizer={() => equalizerOpen = true}
         onshuffle={player.toggleShuffle}
         onrepeat={player.cycleRepeat}
         onvolumechange={player.handleVolumeChange}
@@ -220,3 +227,5 @@
     />
   </div>
 </div>
+
+<EqualizerPanel {equalizer} open={equalizerOpen} onclose={() => equalizerOpen = false} />

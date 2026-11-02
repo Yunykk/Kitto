@@ -5,12 +5,14 @@
     isShuffling: boolean;
     repeatMode: RepeatMode;
     volume: number;
+    equalizerEnabled: boolean;
+    onequalizer: () => void;
     onshuffle: () => void;
     onrepeat: () => void;
     onvolumechange: (event: Event) => void;
   };
 
-  let { isShuffling, repeatMode, volume, onshuffle, onrepeat, onvolumechange }: Props = $props();
+  let { isShuffling, repeatMode, volume, equalizerEnabled, onequalizer, onshuffle, onrepeat, onvolumechange }: Props = $props();
 
   const repeatLabels = {
     off: "Repeat off",
@@ -52,7 +54,15 @@
     </button>
   </div>
 
-  <div class="volume-control">
+  <div class="sound-options">
+    <button class="mode-button eq-trigger" class:active={equalizerEnabled} type="button"
+      aria-label="Open equalizer" aria-haspopup="dialog" title="Equalizer" onclick={onequalizer}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M5 3v5m0 4v9M12 3v10m0 4v4M19 3v2m0 4v12M2 8h6m1 9h6m1-12h6" />
+      </svg>
+      <span>EQ</span>
+    </button>
+    <div class="volume-control">
     <label class="sr-only" for="volume">Volume</label>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="m11 5-6 4H2v6h3l6 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14" />
@@ -69,4 +79,15 @@
     />
     <output for="volume">{Math.round(volume * 100)}%</output>
   </div>
+  </div>
 </div>
+
+<style>
+  .sound-options { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+  .eq-trigger { flex: none; }
+  @media (max-width: 420px) {
+    .eq-trigger { padding-inline: 7px; }
+    .eq-trigger span { display: none; }
+    .playback-modes span { display: none; }
+  }
+</style>

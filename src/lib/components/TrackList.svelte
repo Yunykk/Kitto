@@ -85,7 +85,7 @@
       (section === "favorites" && !favorites.separateTab)
     }
       onclick={() => { section = "playlists"; notice = ""; }}>Playlists</button>
-    
+
     {#if favorites.separateTab}
       <button
         type="button"
@@ -124,8 +124,15 @@
     {:else if visible.length === 0}
       <div class="queue-empty" role="status"><h3>No matching tracks</h3><p>Try a different name.</p></div>
     {:else}
-      <CollectionList items={visible} view={preferences.music.view} label="Music"
-        activeId={currentId} {isPlaying} onopen={onselect}>
+      <CollectionList
+        items={visible}
+        view={preferences.music.view}
+        label="Music"
+        activeId={currentId}
+        {isPlaying}
+        {favorites}
+        onopen={onselect}
+        >
         {#snippet actions(item)}
           <PopoverButton label={`Actions for ${item.title}`}>
             {#snippet children(close)}
@@ -150,17 +157,17 @@
   </div>
 
   <div class="library-section" hidden={section !== "playlists"}>
-    <PlaylistsPanel 
-      {tracks} 
-      {collections} 
+    <PlaylistsPanel
+      {tracks}
+      {collections}
       {favorites}
-      {preferences} 
-      {currentId} 
+      {preferences}
+      {currentId}
       {isPlaying}
-      {isChoosingFiles} 
-      {onfiles} 
+      {isChoosingFiles}
+      {onfiles}
       onplay={onplayplaylist}
-      onliked={() => section = "favorites"}  
+      onliked={() => section = "favorites"}
     />
   </div>
 
@@ -186,9 +193,18 @@
     {#if queueItems.length === 0}
       <div class="queue-empty"><h3>Your queue is empty</h3><p>Play a track or open a playlist.</p></div>
     {:else}
-      <CollectionList items={queueItems} view="list" label="Playback queue"
-        activeId={currentId} {isPlaying}
-        onopen={(id) => onqueueselect(queue.findIndex((track) => track.id === id))}>
+      <CollectionList
+        items={queueItems}
+        view="list"
+        label="Playback queue"
+        activeId={currentId}
+        {isPlaying}
+        {favorites}
+        onopen={(id) =>
+        onqueueselect(
+          queue.findIndex((track) => track.id === id),
+          )}
+      >
         {#snippet actions(item)}
           <PopoverButton label={`Actions for ${item.title}`}>
             {#snippet children(close)}

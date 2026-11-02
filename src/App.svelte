@@ -55,4 +55,9 @@
   </main>
 </div>
 
-<SettingsPanel {appearance} open={settingsOpen} onclose={() => settingsOpen = false} />
+<SettingsPanel
+  {appearance}
+  {favorites}
+  open={settingsOpen}
+  onclose={() => settingsOpen = false}
+/>
