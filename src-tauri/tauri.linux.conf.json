@@ -1,0 +1,25 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "bundle": {
+    "targets": ["deb", "rpm", "appimage"],
+    "category": "Music",
+    "homepage": "https://github.com/Yunykk/Kitto",
+    "publisher": "Yunykk",
+    "license": "MIT",
+    "shortDescription": "A local music player",
+    "longDescription": "Play and organize your local music with playlists, liked songs, themes, listening statistics and a ten-band equalizer.",
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "section": "sound",
+        "depends": ["gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good", "gstreamer1.0-plugins-bad", "gstreamer1.0-libav"]
+      },
+      "rpm": {
+        "depends": ["gstreamer1-plugins-base", "gstreamer1-plugins-good", "gstreamer1-plugins-bad-free"],
+        "recommends": ["gstreamer1-plugin-openh264"]
+      }
+    }
+  }
+}

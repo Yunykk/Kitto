@@ -12,6 +12,7 @@
   import PopoverButton from "./PopoverButton.svelte";
   import type { FavoritesController } from "../favorites.svelte";
   import LikedSongsPanel from "./LikedSongsPanel.svelte";
+    import AlbumsPanel from "./AlbumsPanel.svelte";
 
   let { tracks, queue, queueName, currentId, isPlaying, isIndexing, metadataError,
     isChoosingFiles, collections, favorites, onadd, onfiles, onselect, onqueueselect,
@@ -40,12 +41,27 @@
   provideLibraryArtwork();
   const preferences = createCollectionSettings();
   let section = $state<
-      "tracks" | "playlists" | "queue" | "favorites"
+      "tracks" | "albums" | "playlists" | "queue" | "favorites"
   >("tracks");
   let query = $state("");
   let confirmClear = $state(false);
   let newPlaylistTrackId = $state<string | null>(null);
   let notice = $state("");
+  let playlistsPanel = $state<{ navigateBack: () => boolean }>();
+  let albumsPanel = $state<{
+    navigateBack: () => Boolean;
+  }>();
+
+  export function navigateBack(): boolean {
+    if (section === "albums" && albumsPanel?.navigateBack()) {
+      return true;
+    }
+    if (section === "playlists" && playlistsPanel?.navigateBack()) return true;
+    if (section === "favorites" && !favorites.separateTab) { section = "playlists"; return true; }
+    if (section !== "tracks") { section = "tracks"; return true; }
+    if (query) { query = ""; return true; }
+    return false;
+  }
   const items = $derived(tracks.map((track): CollectionItem => ({
     id: track.id, title: track.title, subtitle: track.artist ?? track.fileName,
     artist: track.artist, album: track.album, paths: [track.path],
@@ -80,6 +96,19 @@
   <div class="library-tabs" role="group" aria-label="Library sections">
     <button type="button" aria-pressed={section === "tracks"} disabled={isChoosingFiles}
       onclick={() => { section = "tracks"; notice = ""; }}>Music</button>
+
+    <button
+      type="button"
+      aria-pressed={section === "albums"}
+      disabled={isChoosingFiles}
+      onclick={() => {
+        section = "albums";
+        notice = "";
+      }}
+    >
+      Albums
+    </button>
+
     <button type="button" aria-pressed={
       section === "playlists" ||
       (section === "favorites" && !favorites.separateTab)
@@ -102,6 +131,19 @@
 
     <button type="button" aria-pressed={section === "queue"} disabled={isChoosingFiles}
       onclick={() => { section = "queue"; notice = ""; }}>Queue <span>{queue.length}</span></button>
+  </div>
+
+  <div class="library-section" hidden={section !== "albums"}>
+    <AlbumsPanel
+      bind:this={albumsPanel}
+      {tracks}
+      {currentId}
+      {isPlaying}
+      {isIndexing}
+      {metadataError}
+      {favorites}
+      onplay={onplayplaylist}
+    />
   </div>
 
   <div class="library-section" hidden={section !== "tracks"}>
@@ -158,6 +200,7 @@
 
   <div class="library-section" hidden={section !== "playlists"}>
     <PlaylistsPanel
+      bind:this={playlistsPanel}
       {tracks}
       {collections}
       {favorites}
@@ -229,8 +272,8 @@
   onclose={() => newPlaylistTrackId = null} />
 
 <style>
-  .library-tabs { display: flex; flex: none; gap: 4px; margin-bottom: 14px; padding: 4px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-panel); }
-  .library-tabs button { flex: 1; min-width: 0; padding: 8px 4px; border: 0; border-radius: 9px; color: var(--color-muted); background: transparent; font-size: 11px; cursor: pointer; }
+  .library-tabs { display: flex; flex: none; gap: 4px; margin-bottom: 14px; padding: 4px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-panel); overflow-x: auto; }
+  .library-tabs button { flex: 1 0 auto; min-width: 60px; padding: 8px 4px; border: 0; border-radius: 9px; color: var(--color-muted); background: transparent; font-size: 11px; cursor: pointer; }
   .library-tabs button[aria-pressed="true"] { color: var(--color-text); background: var(--color-raised); box-shadow: var(--shadow-soft); }
   .library-tabs button:disabled { opacity: .5; cursor: not-allowed; }
   .library-tabs span { margin-left: 3px; font-size: 10px; }

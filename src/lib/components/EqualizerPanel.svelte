@@ -2,10 +2,11 @@
   import { equalizerBands, equalizerPresets } from "../equalizer";
   import type { EqualizerController } from "../equalizer.svelte";
 
-  let { equalizer, open, onclose }: {
+  let { equalizer, open, onclose, notice = "" }: {
     equalizer: EqualizerController;
     open: boolean;
     onclose: () => void;
+    notice?: string;
   } = $props();
 
   let dialog = $state<HTMLDialogElement>();
@@ -96,6 +97,7 @@
   </fieldset>
 
   {#if equalizer.error}<p class="eq-error" role="alert">{equalizer.error}</p>{/if}
+  {#if notice}<p class="eq-notice" role="status">{notice}</p>{/if}
 </dialog>
 
 <style>
@@ -132,6 +134,7 @@
   .preamp > input:disabled { opacity: .35; }
   .auto { justify-self: end; }
   .eq-error { margin: 16px 0 0; color: var(--color-error); font-size: 12px; }
+  .eq-notice { margin: 16px 0 0; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
   @media (max-width: 520px) {
     .equalizer-dialog { padding: 18px; }
     header { margin-bottom: 16px; }

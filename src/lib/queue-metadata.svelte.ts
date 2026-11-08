@@ -21,6 +21,9 @@ export function createQueueMetadata(
                 fileName: track.title,
                 artist: tags?.artist ?? null,
                 album: tags?.album ?? null,
+                albumArtist: tags?.albumArtist ?? null,
+                trackNumber: tags?.trackNumber ?? null,
+                discNumber: tags?.discNumber ?? null
             };
         }),
     );
@@ -57,6 +60,9 @@ export function createQueueMetadata(
                         title: result.title,
                         artist: result.artist,
                         album: result.album,
+                        albumArtist: result.albumArtist ?? null,
+                        trackNumber: result.trackNumber ?? null,
+                        discNumber: result.discNumber ?? null,
                     });
                 } catch {
                     if (signal.aborted) return;

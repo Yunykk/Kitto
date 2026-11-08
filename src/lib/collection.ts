@@ -11,6 +11,8 @@ export type CollectionItem = {
   album?: string | null;
   addedAt?: number;
   lastPlayedAt?: number;
+  trackNumber?: number | null;
+  group?: string;
 };
 
 export const views: { id: CollectionView; name: string; path: string }[] = [

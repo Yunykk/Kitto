@@ -1,5 +1,6 @@
 import { onMount } from "svelte";
 import { getAudioProgress, onAudioProgress } from "./audio";
+import { isAndroidAudio } from "./android-bridge";
 
 type SessionState = {
   readonly hasTrack: boolean;
@@ -36,7 +37,7 @@ export function createMediaSession(
   actions: SessionActions,
 ) {
   const session =
-    typeof navigator !== "undefined" && "mediaSession" in navigator
+    !isAndroidAudio() && typeof navigator !== "undefined" && "mediaSession" in navigator
       ? navigator.mediaSession
       : null;
 

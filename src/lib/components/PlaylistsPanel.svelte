@@ -119,6 +119,12 @@
     else if (addView === "sources") addView = null;
     else selectedId = null;
   }
+
+  export function navigateBack(): boolean {
+    if (addView === null && selectedId === null) return false;
+    if (!isChoosingFiles) back();
+    return true;
+  }
   function edit(mode: "create" | "rename" | "delete", id: string | null = null) {
     collections.clearError();
     dialogId = id;

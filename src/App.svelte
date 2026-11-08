@@ -3,22 +3,60 @@
   import Player from "./lib/components/Player.svelte";
   import SettingsPanel from "./lib/components/SettingsPanel.svelte";
   import { createAppearance } from "./lib/appearance.svelte";
-  import { isTauri } from "@tauri-apps/api/core";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { createFavorites } from "./lib/favorites.svelte";
+  import { createListeningStats } from "./lib/listening.svelte";
+  import ListeningStatsPanel from "./lib/components/ListeningStatsPanel.svelte";
+  import { onMount } from "svelte";
+  import { isDesktopRuntime } from "./lib/runtime";
+  import { registerAndroidBack } from "./lib/mobile-back";
+  import { createTuning } from "./lib/tuning.svelte";
+  import { configureTuning } from "./lib/audio";
+  import { createMusicFolders } from "./lib/music-folders.svelte"; 
+  import { 
+    pickDesktopMusicFolder,
+    scanDesktopMusicFolder,
+    type FolderScanResult,
+  } from "./lib/music-folder-access"
+
 
   const appearance = createAppearance();
   const favorites = createFavorites();
+  const listeningStats = createListeningStats();
+  const tuning = createTuning(configureTuning);
+  let player = $state<{
+    playHistoryTrack: (id: string) => void;
+    importFolderFiles: (
+      files: FolderScanResult["files"],
+    ) => string[] | null;
+    handleMobileBack: () => boolean;
+    prepareForExit: () => void;
+  }>();
+
+  const musicFolders = createMusicFolders(
+    {
+      pick: pickDesktopMusicFolder,
+      scan: scanDesktopMusicFolder,
+    },
+    (files) => player?.importFolderFiles(files) ?? null,
+  );
+  
+  let statsOpen = $state(false);
   let settingsOpen = $state(false);
 
   $effect(() => {
     const mode = appearance.mode;
-    if (!appearance.isReady || !isTauri()) return;
+    if (!appearance.isReady || !isDesktopRuntime()) return;
 
     void getCurrentWindow().setTheme(mode).catch((error) => {
       console.warn("Could not update window theme.", error);
     });
   });
+
+  onMount(() => registerAndroidBack({
+    navigate: () => player?.handleMobileBack() ?? false,
+    beforeExit: () => player?.prepareForExit(),
+  }));
 </script>
 
 <svelte:head>
@@ -33,6 +71,13 @@
       <h1>{productName}</h1>
     </div>
     <div class="header-actions">
+      <button class="settings-trigger" type="button" aria-label="Open listening statistics"
+        aria-haspopup="dialog" title="Listening statistics" onclick={() => statsOpen = true}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 20V10m8 10V4m8 16v-7" />
+        </svg>
+        <span>Stats</span>
+      </button>
       <button
         class="settings-trigger"
         type="button"
@@ -51,13 +96,25 @@
   </header>
 
   <main class="app-main">
-    <Player theme={appearance.theme} {favorites} />
+    <Player bind:this={player} theme={appearance.theme} {favorites} {listeningStats} />
   </main>
 </div>
 
 <SettingsPanel
+  {tuning}
   {appearance}
   {favorites}
+  {musicFolders}
   open={settingsOpen}
   onclose={() => settingsOpen = false}
+/>
+
+<ListeningStatsPanel
+  open={statsOpen}
+  summary={listeningStats.summary}
+  isReady={listeningStats.isReady}
+  error={listeningStats.error}
+  onclose={() => { listeningStats.flush(); statsOpen = false; }}
+  onplay={(id) => { player?.playHistoryTrack(id); statsOpen = false; }}
+  onreset={listeningStats.clear}
 />

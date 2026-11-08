@@ -9,13 +9,17 @@ globalThis.Audio = class extends EventTarget {
   currentTime = 0;
   duration = NaN;
   volume = 1;
+  paused = true;
+  readyState = 0;
+  seeking = false;
+  ended = false;
+  playbackRate = 1;
   load() {}
   pauses = 0;
-  pause() { this.pauses++; }
+  pause() { this.pauses++; this.paused = true; }
   play() { return Promise.resolve(); }
   removeAttribute() {}
 };
-const core = `data:text/javascript;base64,${Buffer.from("export const convertFileSrc = path => path;").toString("base64")}`;
 function compileSource(path, imports = {}) {
   const { outputText } = ts.transpileModule(
     readFileSync(new URL(path, import.meta.url), "utf8"),
@@ -29,9 +33,11 @@ function compileSource(path, imports = {}) {
   return `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`;
 }
 const equalizerModel = compileSource("../src/lib/equalizer.ts");
-const equalizerEngine = compileSource("../src/lib/equalizer-engine.ts", { "./equalizer": equalizerModel });
-const audio = await import(compileSource("../src/lib/audio.ts", {
-  "@tauri-apps/api/core": core,
+const tuningModel = compileSource("../src/lib/tuning.ts");
+const tuningStage = `data:text/javascript;base64,${Buffer.from("export const createTuningStage = c => ({input:c.createGain(),output:c.createGain(),setTarget:async()=>{},ready:async()=>{},reset(){},dispose(){}});").toString("base64")}`;
+const equalizerEngine = compileSource("../src/lib/equalizer-engine.ts", { "./equalizer": equalizerModel, "./tuning-stage": tuningStage, "./tuning": tuningModel });
+const audio = await import(compileSource("../src/lib/audio-desktop.ts", {
+  "./audio-source": `data:text/javascript;base64,${Buffer.from("export const convertFileSrc = path => path; export const needsLinuxAudioStream = () => false; export const createAudioSource = () => null;").toString("base64")}`,
   "./equalizer-engine": equalizerEngine,
 }));
 
@@ -63,6 +69,28 @@ test("unloading discards the pending position", () => {
   assert.equal(audio.getAudioProgress().currentTime, 0);
 });
 
+test("playback snapshots distinguish loading, playing, seeking and paused states", () => {
+  const samples = [];
+  audio.loadAudio("stats.wav");
+  const firstId = audio.getAudioPlayback().loadId;
+  const off = audio.onAudioPlayback(value => samples.push(value));
+  assert.equal(samples.at(-1).active, false);
+  element.duration = 120; element.readyState = 4; element.paused = false;
+  element.dispatchEvent(new Event("playing"));
+  assert.equal(samples.at(-1).active, true);
+  element.currentTime = 3;
+  audio.seekTo(90);
+  assert.equal(samples.at(-2).currentTime, 3);
+  assert.equal(samples.at(-1).seeking, true);
+  assert.equal(samples.at(-1).active, false);
+  audio.pauseAudio();
+  assert.equal(samples.at(-1).active, false);
+  audio.loadAudio("new-stats.wav");
+  assert.equal(audio.getAudioPlayback().loadId, firstId + 1);
+  assert.equal(audio.getAudioPlayback().path, "new-stats.wav");
+  off();
+});
+
 test("an older failed play request cannot pause a newer track", async () => {
   globalThis.AudioContext = class {
     sampleRate = 48000;
@@ -77,6 +105,7 @@ test("an older failed play request cannot pause a newer track", async () => {
   let rejectFirst;
   element.play = () => new Promise((_, reject) => { rejectFirst = reject; });
   const first = audio.playAudio();
+  await new Promise(resolve => setTimeout(resolve, 0));
   audio.loadAudio("new.wav");
   element.play = () => Promise.resolve();
   await audio.playAudio();

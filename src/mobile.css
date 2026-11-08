@@ -1,0 +1,90 @@
+:root[data-platform="android"] {
+  --mobile-safe-top: var(--android-safe-top, env(safe-area-inset-top, 0px));
+  --mobile-safe-right: var(--android-safe-right, env(safe-area-inset-right, 0px));
+  --mobile-safe-bottom: var(--android-safe-bottom, env(safe-area-inset-bottom, 0px));
+  --mobile-safe-left: var(--android-safe-left, env(safe-area-inset-left, 0px));
+}
+
+:root[data-platform="android"][data-theme] .app-shell {
+  grid-template-rows: 56px minmax(0, 1fr);
+  height: var(--android-viewport-height, 100dvh);
+  padding: var(--mobile-safe-top) var(--mobile-safe-right) var(--mobile-safe-bottom) var(--mobile-safe-left);
+}
+:root[data-platform="android"] .app-header { min-width: 0; padding: 0 16px; gap: 12px; }
+:root[data-platform="android"] .header-actions { gap: 8px; }
+:root[data-platform="android"] .settings-trigger { min-width: 44px; min-height: 44px; padding: 8px; }
+:root[data-platform="android"] .settings-trigger > span { display: none; }
+:root[data-platform="android"] .app-main { min-width: 0; min-height: 0; overflow: hidden; }
+
+:root[data-platform="android"][data-theme] .player {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%; min-height: 0; padding: 0; gap: 0;
+}
+:root[data-platform="android"] .player-toolbar { display: flex; grid-area: 1 / 1; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--color-line); }
+:root[data-platform="android"] .view-switch { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--color-hover); }
+:root[data-platform="android"] .view-switch button { min-height: 44px; padding: 7px 10px; border: 0; border-radius: 7px; font-size: 12px; color: var(--color-muted); background: transparent; }
+:root[data-platform="android"] .view-switch button[aria-pressed="true"] { color: var(--color-text); background: var(--color-raised); }
+:root[data-platform="android"] .choose-files { min-height: 44px; padding: 0 10px; }
+:root[data-platform="android"] .now-playing { grid-area: 2 / 1; gap: 10px; padding: 12px 16px; overflow: auto; overscroll-behavior: contain; }
+:root[data-platform="android"] .record-stage { flex: 1 1 auto; min-height: 100px; }
+:root[data-platform="android"] .player-deck { width: min(100%, 440px); gap: 8px; }
+:root[data-platform="android"] .track-title-row .favorite-button { width: 44px; height: 44px; }
+:root[data-platform="android"] .timeline { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 8px; }
+:root[data-platform="android"] .timeline input { height: 32px; touch-action: none; }
+:root[data-platform="android"] .volume-control input { height: 32px; touch-action: none; }
+:root[data-platform="android"] .playback-controls { min-width: 0; min-height: 72px; width: min(100%, 320px); padding: 6px; gap: 16px; }
+:root[data-platform="android"] .transport-button { width: 48px; height: 48px; min-width: 44px; min-height: 44px; }
+:root[data-platform="android"] .transport-button--primary { width: 64px; height: 64px; }
+:root[data-platform="android"] .player-options { gap: 6px; flex-wrap: wrap; }
+:root[data-platform="android"] .playback-modes { gap: 4px; }
+:root[data-platform="android"] .mode-button { min-height: 44px; min-width: 44px; padding: 7px; }
+:root[data-platform="android"] .sound-options { flex: 1 1 140px; min-width: 0; gap: 6px; }
+:root[data-platform="android"] .volume-control { min-width: 90px; flex: 1 1 100px; }
+
+:root[data-platform="android"][data-theme] .library-panel { grid-area: 2 / 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; margin: 8px 10px; padding: 12px; overflow: hidden; border-right-width: 1px; border-radius: 15px; }
+:root[data-platform="android"] .library-heading { display: none; }
+:root[data-platform="android"] .library-tabs { margin-bottom: 8px; }
+:root[data-platform="android"] .library-tabs button { min-height: 44px; padding: 8px 4px; }
+:root[data-platform="android"] .library-search { min-height: 44px; }
+:root[data-platform="android"] .collection-list { touch-action: pan-y; overscroll-behavior: contain; }
+:root[data-platform="android"] .collection-actions { opacity: 1; pointer-events: auto; }
+:root[data-platform="android"] .popover-trigger:not(.collection-actions .popover-trigger) { min-width: 44px; min-height: 44px; }
+:root[data-platform="android"] .menu-action { min-height: 44px; }
+:root[data-platform="android"] .player[data-view="player"] > .library-panel { display: none; }
+:root[data-platform="android"] .player[data-view="queue"] > .now-playing { display: none; }
+:root[data-platform="android"] .player[data-view="player"] > .queue-player { display: none; }
+:root[data-platform="android"] .player[data-view="queue"] { grid-template-rows: auto minmax(0, 1fr) auto; }
+:root[data-platform="android"] .player[data-view="queue"] > .queue-player { display: flex; }
+:root[data-platform="android"] .queue-player { grid-area: 3 / 1; display: none; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 8px 12px; border-top: 1px solid var(--color-line); background: var(--color-surface); }
+:root[data-platform="android"] .queue-track-info { min-width: 0; }
+:root[data-platform="android"] .queue-track-info p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 4px 0 0; font-size: 12px; }
+:root[data-platform="android"] .queue-track-info > span { font-size: 10px; color: var(--color-muted); }
+:root[data-platform="android"] .queue-player .playback-controls { flex: none; min-height: 52px; width: auto; padding: 0; gap: 8px; }
+:root[data-platform="android"] .queue-player .transport-button { width: 44px; height: 44px; }
+:root[data-platform="android"] .queue-player .transport-button--primary { width: 52px; height: 52px; }
+
+:root[data-platform="android"] :is(.settings-dialog, .equalizer-dialog, .listening-dialog, .collection-dialog) {
+  inset: var(--mobile-safe-top) var(--mobile-safe-right) var(--mobile-safe-bottom) var(--mobile-safe-left);
+  max-width: calc(100vw - 24px - var(--mobile-safe-left) - var(--mobile-safe-right));
+  max-height: calc(100dvh - 24px - var(--mobile-safe-top) - var(--mobile-safe-bottom));
+  margin: auto;
+}
+:root[data-platform="android"] :is(.equalizer-dialog, .listening-dialog, .collection-dialog) { overflow: auto; overscroll-behavior: contain; }
+:root[data-platform="android"] :is(.close-settings, .close-button) { min-width: 44px; min-height: 44px; }
+:root[data-platform="android"] .collection-dialog button { min-height: 44px; }
+:root[data-platform="android"] .equalizer-dialog .band-slider { touch-action: none; }
+:root[data-platform="android"] button { touch-action: manipulation; }
+
+@media (orientation: landscape) and (max-height: 480px) {
+  :root[data-platform="android"][data-theme] .app-shell { grid-template-rows: 48px minmax(0, 1fr); }
+  :root[data-platform="android"] .player-toolbar { padding-block: 2px; }
+  :root[data-platform="android"] .view-switch { padding: 0; }
+  :root[data-platform="android"] .now-playing { flex-direction: row; align-items: flex-start; gap: 14px; padding-block: 6px; }
+  :root[data-platform="android"] .record-stage { flex: 0 0 30%; width: 30%; height: 160px; min-height: 120px; }
+  :root[data-platform="android"] .player-deck { flex: 1; width: 0; min-width: 0; gap: 3px; padding: 6px 12px; }
+  :root[data-platform="android"] .track-text h2 { font-size: 18px; }
+  :root[data-platform="android"] .track-text p { margin-top: 0; font-size: 10px; }
+  :root[data-platform="android"] .playback-controls { min-height: 52px; padding-block: 0; }
+  :root[data-platform="android"] .transport-button--primary { width: 52px; height: 52px; }
+}

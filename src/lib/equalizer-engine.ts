@@ -4,10 +4,13 @@ import {
     normalizeEqualizer,
     type EqualizerSettings,
 } from "./equalizer";
+import { createTuningStage } from "./tuning-stage";
+import { parseTuningTarget, type TuningTarget } from "./tuning";
 
 
 type EqualizerGraph = {
     context: AudioContext;
+    tuning: ReturnType<typeof createTuningStage>;
     filters: BiquadFilterNode[];
     probe: BiquadFilterNode;
     preamp: GainNode;
@@ -42,7 +45,7 @@ function setParameter(
 
 
 
-function createGraph(audio: HTMLAudioElement): EqualizerGraph {
+function createGraph(audio: HTMLAudioElement, onError: () => void): EqualizerGraph {
     const context = new AudioContext();
     const nyquist = context.sampleRate / 2;
     const preamp = context.createGain();
@@ -82,8 +85,10 @@ function createGraph(audio: HTMLAudioElement): EqualizerGraph {
     dry.connect(context.destination);
 
     const source = context.createMediaElementSource(audio);
-    source.connect(preamp);
-    source.connect(dry);
+    const tuning = createTuningStage(context, () => !audio.paused, onError);
+    source.connect(tuning.input);
+    tuning.output.connect(preamp);
+    tuning.output.connect(dry);
 
     const frequencies = new Float32Array(1024);
     const maximum = nyquist - 1;
@@ -96,6 +101,7 @@ function createGraph(audio: HTMLAudioElement): EqualizerGraph {
 
     return {
         context,
+        tuning,
         filters,
         probe: context.createBiquadFilter(),
         preamp,
@@ -145,9 +151,10 @@ function automaticPreamp(
 }
 
 
-export function createEqualizerEngine(audio: HTMLAudioElement) {
+export function createEqualizerEngine(audio: HTMLAudioElement, onError: () => void = () => {}) {
   let settings = defaultEqualizer();
   let graph: EqualizerGraph | null = null;
+  let tuningTarget: TuningTarget = null;
 
   function apply(immediate = false) {
     if (!graph) return;
@@ -203,25 +210,42 @@ export function createEqualizerEngine(audio: HTMLAudioElement) {
     apply();
   }
 
-  async function resume() {
+  function prepare() {
     if (!graph) {
-      graph = createGraph(audio);
+      graph = createGraph(audio, onError);
       apply(true);
     }
+    return graph;
+  }
 
-    if (graph.context.state !== "running") {
-      await graph.context.resume();
-    }
+  async function resume() {
+    const current = prepare();
+    const waking = current.context.state === "running" ? Promise.resolve() : current.context.resume();
+    void current.tuning.setTarget(tuningTarget).catch(() => {});
+    await Promise.all([waking, current.tuning.ready()]);
+  }
+
+  function configureTuning(target: TuningTarget): Promise<void> {
+    tuningTarget = parseTuningTarget(target);
+    return prepare().tuning.setTarget(tuningTarget);
+  }
+
+  function resetTuning() {
+    graph?.tuning.reset();
   }
 
   function dispose() {
     if (!graph) return;
+    graph.tuning.dispose();
     void graph.context.close().catch(() => {});
     graph = null;
   }
 
   return {
     configure,
+    configureTuning,
+    resetTuning,
+    prepare,
     resume,
     dispose,
   };

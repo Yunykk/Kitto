@@ -1,6 +1,8 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { QueueTrack } from "./types";
+import { isContentUri, requirePlayablePaths } from "./media-location";
+import { androidRequest, isAndroidAudio } from "./android-bridge";
 
 export type SavedQueue = {
   trackIds: string[];
@@ -44,7 +46,28 @@ function parseTrack(value: unknown): QueueTrack | null {
 }
 
 export async function pickTracks(): Promise<QueueTrack[]> {
-  if (!isTauri()) throw new Error("Open the Kitto desktop app to add files.");
+  if (!isTauri()) throw new Error("Open the Kitto app to add files.");
+  if (isAndroidAudio()) {
+    const result = await androidRequest<{
+      documents: { uri: string; name: string }[];
+    }>("pickDocuments");
+    if (!Array.isArray(result.documents) || result.documents.some((document) =>
+      !document || typeof document.uri !== "string" || !isContentUri(document.uri) ||
+      typeof document.name !== "string",
+    )) throw new Error("Could not read the selected Android documents. No files were added.");
+
+    const seen = new Set<string>();
+    return result.documents.filter((document) => {
+      if (seen.has(document.uri)) return false;
+      seen.add(document.uri);
+      return true;
+    }).map((document) => ({
+      id: crypto.randomUUID(),
+      title: document.name.trim() || "Audio file",
+      path: document.uri,
+      addedAt: Date.now(),
+    }));
+  }
   const selected = await open({
     title: "Add music",
     multiple: true,
@@ -56,6 +79,7 @@ export async function pickTracks(): Promise<QueueTrack[]> {
   });
   if (!selected) return [];
   const paths = Array.isArray(selected) ? selected : [selected];
+  requirePlayablePaths(paths);
   const seen = new Set<string>();
   return paths.filter((path) => {
     const key = pathKey(path);
@@ -64,7 +88,8 @@ export async function pickTracks(): Promise<QueueTrack[]> {
     return true;
   }).map((path) => ({
     id: crypto.randomUUID(),
-    title: path.split(/[\\/]/).pop() || path,
+    title: (/^[a-z]:[\\/]/i.test(path) || path.startsWith("\\\\")
+      ? path.split(/[\\/]/) : path.split("/")).pop() || path,
     path,
     addedAt: Date.now(),
   }));

@@ -1,0 +1,3 @@
+[default]
+description = "Allows Kitto's Android document picker and local playback controls. Native operations are limited to picker-granted content URIs."
+permissions = ["allow-request"]

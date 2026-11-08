@@ -1,0 +1,20 @@
+Kitto audio processing
+
+The desktop pitch processor includes these SoundTouchJS 2.1.1 packages:
+@soundtouchjs/core
+@soundtouchjs/worklet-base
+@soundtouchjs/interpolation-strategy-lanczos
+
+SoundTouchJS is maintained by Steve "Cutter" Blades and contributors.
+License: Mozilla Public License 2.0 (MPL-2.0).
+Source for these packages, including their license notices:
+https://github.com/cutterbl/SoundTouchJS
+Published package source and source maps are also available from npm.
+License text: https://www.mozilla.org/MPL/2.0/
+
+Kitto's processor adapter is in src/lib/worklets/tuning-processor.ts.
+Kitto's own code is licensed separately under the project LICENSE.
+
+Android playback uses AndroidX Media3 (Apache License 2.0).
+Source and notices: https://github.com/androidx/media
+License text: https://www.apache.org/licenses/LICENSE-2.0

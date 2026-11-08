@@ -1,7 +1,7 @@
 {
   "name": "Kitto",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A minimal starter for the Kitto local music player",
   "type": "module",
   "scripts": {
@@ -11,12 +11,26 @@
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.node.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "node --test tests/*.test.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "linux:check": "node scripts/linux.mjs check",
+    "linux:dev": "node scripts/linux.mjs dev",
+    "linux:build": "node scripts/linux.mjs build",
+    "android:check": "node scripts/android.mjs check",
+    "android:test": "node scripts/android.mjs test",
+    "android:verify": "node scripts/android-apk.mjs",
+    "android:init": "node scripts/android.mjs init",
+    "android:dev": "node scripts/android.mjs dev",
+    "android:build": "node scripts/android.mjs build"
   },
   "license": "MIT",
   "dependencies": {
+    "@soundtouchjs/audio-worklet": "^2.1.1",
+    "@soundtouchjs/core": "^2.1.1",
+    "@soundtouchjs/interpolation-strategy-lanczos": "^2.1.1",
+    "@soundtouchjs/worklet-base": "^2.1.1",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.8.3",
+    "@tauri-apps/plugin-fs": "^2.7.1",
     "music-metadata": "^12.3.2"
   },
   "devDependencies": {

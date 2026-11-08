@@ -42,6 +42,7 @@ const { createPlayer } = await import(compile("../src/lib/player.svelte.ts", {
     export const saveLibrary = value => { if (h().saveError) return false; h().saved = JSON.parse(JSON.stringify(value)); return true; };
   `),
   "./audio": stub(`
+    export const nativeAudio = null;
     export const loadAudio = (path, position) => {
       h().loaded.push(path);
       h().progress = { currentTime: position, duration: 60 };
@@ -67,6 +68,7 @@ const { createPlayer } = await import(compile("../src/lib/player.svelte.ts", {
     export const onAudioError = callback => { h().onError = callback; return () => {}; };
   `),
   "./playback-order.svelte": order,
+  "./runtime": stub(`export const isDesktopRuntime = () => true;`),
 }));
 
 let cleanup;

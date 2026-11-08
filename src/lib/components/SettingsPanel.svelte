@@ -2,18 +2,27 @@
   import { accentPresets, normalizeHex, themes } from "../appearance";
   import type { AppearanceController } from "../appearance.svelte";
   import type { FavoritesController } from "../favorites.svelte";
+  import type { TuningController } from "../tuning.svelte";
+  import { SOURCE_FREQUENCY, tuningFrequencies } from "../tuning";
+  import MusicFoldersPanel from "./MusicFoldersPanel.svelte";
+  import type { MusicFoldersController } from "../music-folders.svelte";
+  import { isDesktopRuntime } from "../runtime";
 
   type Props = {
     appearance: AppearanceController;
     favorites: FavoritesController;
+    tuning: TuningController;
     open: boolean;
+    musicFolders: MusicFoldersController;
     onclose: () => void;
   };
 
   let {
     appearance,
     favorites,
+    tuning,
     open,
+    musicFolders,
     onclose,
   }: Props = $props();
   let dialog = $state<HTMLDialogElement>();
@@ -81,6 +90,24 @@
   </header>
 
   <div class="settings-content">
+    {#if isDesktopRuntime()}
+      <MusicFoldersPanel controller={musicFolders} />
+    {/if}
+
+    <fieldset class="settings-section" disabled={!tuning.isReady} aria-busy={tuning.isApplying}>
+      <legend>Tuning</legend>
+      <p class="tuning-hint">Reference A4: {SOURCE_FREQUENCY} Hz. Tempo stays unchanged.</p>
+      <div class="tuning-options" role="group" aria-label="Reference frequency">
+        <button type="button" aria-pressed={tuning.requested === null}
+          onclick={() => void tuning.setTarget(null)}>Original</button>
+        {#each tuningFrequencies as frequency}
+          <button type="button" aria-pressed={tuning.requested === frequency}
+            onclick={() => void tuning.setTarget(frequency)}>{frequency} Hz</button>
+        {/each}
+      </div>
+      {#if tuning.isApplying}<p class="tuning-hint" role="status">Applying tuning...</p>{/if}
+      {#if tuning.error}<p class="settings-error" role="alert">{tuning.error}</p>{/if}
+    </fieldset>
 
     <fieldset
       class="settings-section"
@@ -199,6 +226,10 @@
 </dialog>
 
 <style>
+  .tuning-hint { margin: 12px 0; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
+  .tuning-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; }
+  .tuning-options button { min-height: 44px; padding: 10px; border: 1px solid var(--color-line); border-radius: 10px; color: var(--color-text); background: var(--color-raised); cursor: pointer; }
+  .tuning-options button[aria-pressed="true"] { border-color: var(--color-accent-ink); color: var(--color-accent-ink); background: var(--color-accent-soft); }
   .settings-dialog {
     width: min(760px, calc(100vw - 32px));
     max-width: none;

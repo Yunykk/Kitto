@@ -1,8 +1,9 @@
 [package]
 name = "kitto"
-version = "0.1.0"
-description = "Kitto local music player starter"
-authors = ["you"]
+version = "0.2.0"
+description = "A local music player with playlists, themes and an equalizer"
+authors = ["Yunykk"]
+license = "MIT"
 edition = "2024"
 
 [lib]
@@ -21,6 +22,13 @@ tauri-plugin-persisted-scope = { version = "2", features = ["protocol-asset"] }
 
 [target.'cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))'.dependencies]
 tauri-plugin-window-state = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tiny_http = "0.12"
+uuid = { version = "1", features = ["v4"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-android-audio = { path = "plugins/android-audio" }
 
 [profile.dev]
 debug = 0

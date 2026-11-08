@@ -1,0 +1,79 @@
+name: Linux
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl pkg-config libwebkit2gtk-4.1-dev libssl-dev librsvg2-dev patchelf libgstreamer1.0-dev gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav libfuse2 rpm webkit2gtk-driver xvfb xauth xdotool xclip dbus-x11 pulseaudio
+      - run: npm ci
+      - run: npm run linux:check
+      - run: npm run check
+      - run: npm test
+      - name: Test Linux audio streaming
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+      - name: Build native smoke-test application
+        run: npm run linux:build -- --debug --no-bundle --ci
+      - name: Install native WebDriver
+        run: cargo install tauri-driver --locked
+      - name: Test native WebKitGTK window
+        run: |
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=kitto_test
+          pactl set-default-sink kitto_test
+          GDK_BACKEND=x11 KITTO_TEST_NATIVE_PICKER=1 KITTO_TEST_CODECS=1 KITTO_AUDIO_MONITOR=kitto_test.monitor dbus-run-session -- xvfb-run -a node scripts/linux-smoke.mjs
+      - name: Build Linux packages
+        run: npm run linux:build -- --ci
+      - name: Test packaged AppImage
+        shell: bash
+        run: |
+          packages=(src-tauri/target/release/bundle/appimage/*.AppImage)
+          APPIMAGE_EXTRACT_AND_RUN=1 GDK_BACKEND=x11 KITTO_TEST_NATIVE_PICKER=1 KITTO_TEST_CODECS=1 KITTO_AUDIO_MONITOR=kitto_test.monitor dbus-run-session -- xvfb-run -a node scripts/linux-smoke.mjs "${packages[0]}"
+      - name: Upload smoke-test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linux-smoke-diagnostics
+          path: .verification/linux-smoke-failure.png
+          if-no-files-found: ignore
+      - name: Inspect Debian package
+        run: |
+          dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb
+          rpm -qip src-tauri/target/release/bundle/rpm/*.rpm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kitto-linux-x64
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

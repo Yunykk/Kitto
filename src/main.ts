@@ -3,6 +3,10 @@ import App from "./App.svelte";
 import "./app.css";
 import "./themes.css";
 import "./motion.css"
+import "./mobile.css";
+import { runtimePlatform } from "./lib/runtime";
+
+document.documentElement.dataset.platform = runtimePlatform();
 
 const target = document.getElementById("app");
 

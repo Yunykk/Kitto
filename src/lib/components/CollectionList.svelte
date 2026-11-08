@@ -43,7 +43,15 @@
   aria-label={label}
   style:--action-space={`${actionSpace}px`}
 >
-  {#each items as item (item.id)}
+  {#each items as item, index (item.id)}
+
+    {#if item.group && (
+      index === 0 || item.group !== items[index - 1]?.group
+    )}
+      <li class="collection-group">
+        <h4>{item.group}</h4>
+      </li>
+    {/if}
     <li
       class:active={item.id === activeId}
       class:liked={favorites?.has(item.id) ?? false}
@@ -56,6 +64,12 @@
         aria-current={item.id === activeId ? "true" : undefined}
         onclick={() => onopen(item.id)}
       >
+
+        {#if item.trackNumber !== undefined}
+          <span class="collection-number" aria-hidden="true">
+            {item.trackNumber ?? "—"}
+          </span>
+        {/if}
         {#if view !== "compact"}
           <span class="collection-image">
             <CollectionArtwork paths={item.paths} />
@@ -336,6 +350,31 @@
 
   [data-view="grid"] .playing-indicator {
     bottom: 45px;
+  }
+
+
+  .collection-number {
+    flex: none;
+    min-width: 2ch;
+    color: var(--color-muted);
+    text-align: center;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .collection-list > .collection-group {
+    grid-column: 1 / -1;
+    padding: 12px 7px 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .collection-group h4 {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 600;
   }
 
   @media (hover: none) {

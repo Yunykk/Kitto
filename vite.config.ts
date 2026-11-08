@@ -5,6 +5,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig({
   plugins: [svelte()],
+  envPrefix: ["VITE_", "TAURI_ENV_"],
   clearScreen: false,
   server: {
     port: 1420,

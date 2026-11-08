@@ -1,0 +1,7 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "app": {
+    "windows": [{ "label": "main", "title": "Kitto", "fullscreen": false }]
+  },
+  "bundle": { "android": { "minSdkVersion": 24 } }
+}

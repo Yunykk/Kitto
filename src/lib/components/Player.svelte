@@ -16,17 +16,29 @@
   import { createEqualizer } from "../equalizer.svelte";
   import { configureEqualizer } from "../audio";
   import EqualizerPanel from "./EqualizerPanel.svelte";
+  import type { ListeningStatsController } from "../listening.svelte";
+  import { observeListening } from "../listening-session.svelte";
+  import { isAndroidAudio } from "../android-bridge";
 
   let {
     theme = "orbit",
     favorites,
+    listeningStats,
   } : {
     theme?: ThemeId;
     favorites: FavoritesController;
+    listeningStats: ListeningStatsController;
   } = $props();
 
 
   const player = createPlayer();
+
+  export function importFolderFiles(
+    files: Parameters<typeof player.importFolderFiles>[0],
+  ): string[] | null {
+    return player.importFolderFiles(files);
+  }
+
   const equalizer = createEqualizer(configureEqualizer);
   let equalizerOpen = $state(false);
   const collections = createPlaylists(() => player.isReady ? player.library.map((track) => track.id) : null);
@@ -55,6 +67,39 @@
     player.currentTrack?.title ??
     (player.library.length > 0 ? "No track selected" : "Your library is empty"),
   );
+
+  $effect(() => {
+    listeningStats.setAvailableTracks(player.library.map((track) => track.id));
+  });
+
+  const listeningSession = observeListening(() => listeningStats, (path) => {
+    const track = player.library.find((item) => item.path === path);
+    if (!track) return null;
+    const tags = player.currentTrack?.path === path ? currentTags
+      : libraryMetadata.tracks.find((item) => item.id === track.id);
+    return { id: track.id, title: tags?.title ?? track.title, artist: tags?.artist ?? null, album: tags?.album ?? null };
+  });
+
+  export function playHistoryTrack(id: string) {
+    if (!player.library.some((track) => track.id === id)) return;
+    player.playLibraryTrack(id);
+    view = "player";
+  }
+
+  let trackList = $state<{ navigateBack: () => boolean }>();
+
+  export function handleMobileBack(): boolean {
+    if (view !== "queue") return false;
+    if (!trackList?.navigateBack()) view = "player";
+    return true;
+  }
+
+  export function prepareForExit() {
+    if (isAndroidAudio()) player.savePlaybackState();
+    else player.pausePlayback();
+    listeningSession.flush();
+    equalizer.flush();
+  }
 
   createMediaSession(
     {
@@ -113,6 +158,7 @@
   </div>
 
   <TrackList
+    bind:this={trackList}
     tracks={libraryMetadata.tracks}
     queue={player.tracks}
     queueName={player.queueName}
@@ -228,4 +274,9 @@
   </div>
 </div>
 
-<EqualizerPanel {equalizer} open={equalizerOpen} onclose={() => equalizerOpen = false} />
+<EqualizerPanel {equalizer} open={equalizerOpen} onclose={() => equalizerOpen = false}
+  notice={isAndroidAudio()
+    ? player.nativeEqualizerAvailable === false
+      ? "This device does not expose a native equalizer. Playback and volume still work."
+      : "Android applies this curve to the equalizer bands available on your device."
+    : ""} />

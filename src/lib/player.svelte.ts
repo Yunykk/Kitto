@@ -20,8 +20,10 @@ import {
   onAudioProgress,
   onAudioEnded,
   onAudioError,
+  nativeAudio,
 } from "./audio";
 import { createPlaybackOrder } from "./playback-order.svelte";
+import { isDesktopRuntime } from "./runtime";
 
 export function createPlayer() {
   let library = $state<QueueTrack[]>([]);
@@ -46,6 +48,10 @@ export function createPlayer() {
   let storageError = $state("");
   let isPlaying = $state(false);
   let isStarting = $state(false);
+  let nativeCanNext = $state(false);
+  let nativeCanPrevious = $state(false);
+  let nativeEqualizerAvailable = $state<boolean | null>(null);
+  let nativeReady = false;
   let isChoosingFiles = $state(false);
   let volume = $state(1);
   let repeatMode = $state<RepeatMode>("off");
@@ -89,50 +95,147 @@ export function createPlayer() {
     lastSavedAt = performance.now();
   }
 
-  async function importFiles(appendToQueue: boolean): Promise<string[] | null> {
+  function mergeImportedTracks(
+    selected: readonly QueueTrack[],
+    appendToQueue: boolean,
+  ): string[] | null {
+    if (
+      disposed ||
+      !libraryReady ||
+      (nativeAudio && !nativeReady)
+    ) {
+      return null;
+    }
+
+    if (selected.length === 0) return [];
+
+    const byPath = new Map(
+      library.map((track) => [pathKey(track.path), track]),
+    );
+
+    const added: QueueTrack[] = [];
+    const importedIds = new Set<string>();
+
+    for (const candidate of selected) {
+      const key = pathKey(candidate.path);
+      let track = byPath.get(key);
+
+      if (!track) {
+        track = {
+          ...candidate,
+          addedAt: candidate.addedAt ?? Date.now(),
+        };
+
+        byPath.set(key, track);
+        added.push(track);
+      }
+
+      importedIds.add(track.id);
+    }
+
+    const nextLibrary = added.length > 0
+      ? [...library, ...added]
+      : library;
+
+    const updateQueue =
+      appendToQueue && (queueIsLibrary || tracks.length === 0);
+    
+      const nextQueue = updateQueue ? [...nextLibrary] : tracks;
+
+      const nextIsLibrary = updateQueue
+        ? true
+        : !appendToQueue && added.length > 0
+          ? false
+          : queueIsLibrary;
+
+      const nextQueueName = updateQueue ? "Music" : queueName;
+
+      const currentId = currentTrack?.id ?? null;
+      const nextCurrentId = currentId ??
+        (updateQueue ? nextQueue[0]?.id ?? null : null);
+      
+      const saved = saveLibrary({
+        tracks: nextLibrary,
+        queue: {
+          trackIds: nextQueue.map((track) => track.id),
+          name: nextQueueName,
+          isLibrary: nextIsLibrary,
+        },
+        currentTrackId: nextCurrentId,
+        position: currentId ? getAudioProgress().currentTime : 0,
+      });
+
+      if (!saved) {
+        storageError = "Could not save your library"
+        return null;
+      }
+
+      library = nextLibrary;
+      queueIsLibrary = nextIsLibrary;
+      queueName = nextQueueName;
+      storageError = "";
+      lastSavedAt = performance.now();
+
+      if (updateQueue) {
+        tracks = nextQueue;
+
+        if (currentIndex < 0 && tracks.length > 0) {
+          selectTrack(0);
+        }
+
+        nativeAudio?.syncQueue(tracks);
+      }
+
+      return [...importedIds];
+  }
+
+  async function importFiles(
+    appendToQueue: boolean,
+    ): Promise<string[] | null> {
+    
     if (isChoosingFiles || disposed) return [];
+    if (nativeAudio && !nativeReady) return null;
     if (isTauri() && !libraryReady) return null;
+
+
     isChoosingFiles = true;
     playbackError = "";
 
     try {
       const selected = await pickTracks();
+
+
       if (disposed || selected.length === 0) return [];
 
-      const byPath = new Map(library.map((track) => [pathKey(track.path), track]));
-      const added: QueueTrack[] = [];
-      const imported: QueueTrack[] = [];
-      for (const candidate of selected) {
-        const key = pathKey(candidate.path);
-        let track = byPath.get(key);
-        if (!track) {
-          track = { ...candidate, addedAt: candidate.addedAt ?? Date.now() };
-          byPath.set(key, track);
-          added.push(track);
-        }
-        imported.push(track);
+
+      return mergeImportedTracks(selected, appendToQueue);
+    } catch (cause) {
+      if (!disposed) {
+        playbackError = cause instanceof Error
+          ? cause.message
+          : "Could not choose audio files";
       }
 
-      if (added.length > 0) library = [...library, ...added];
-      if (appendToQueue && (queueIsLibrary || tracks.length === 0)) {
-        tracks = [...library];
-        queueIsLibrary = true;
-        queueName = "Music";
-        if (currentIndex < 0 && tracks.length > 0) selectTrack(0);
-      } else if (!appendToQueue && added.length > 0) {
-        queueIsLibrary = false;
-      }
-
-      persistLibrary();
-      return storageError ? null : [...new Set(imported.map((track) => track.id))];
-    } catch (error) {
-      if (!disposed) playbackError = error instanceof Error
-        ? error.message : "Could not choose audio files.";
       return null;
     } finally {
       isChoosingFiles = false;
+      }
     }
-  }
+    
+    function importFolderFiles(
+      files: readonly Pick<QueueTrack, "path" | "title">[],
+    ): string[] | null {
+      if (isChoosingFiles || disposed) return null;
+
+      const selected: QueueTrack[] = files.map((file) => ({
+        id: crypto.randomUUID(),
+        path: file.path,
+        title: file.title,
+        addedAt: Date.now(),
+      }));
+
+      return mergeImportedTracks(selected, queueIsLibrary);
+    }
 
   function playCollection(
     ids: string[],
@@ -140,6 +243,7 @@ export function createPlayer() {
     startId: string | null = null,
     isLibrary = false,
   ): boolean {
+    if (nativeAudio && !nativeReady) return false;
     const byId = new Map(library.map((track) => [track.id, track]));
     const next = [...new Set(ids)].flatMap((id) => {
       const track = byId.get(id);
@@ -166,6 +270,7 @@ export function createPlayer() {
     autoplay = false,
     position = 0,
   ) {
+    if (nativeAudio && !nativeReady) return;
     const track = tracks[index];
 
     if (!track) return;
@@ -181,6 +286,7 @@ export function createPlayer() {
     isStarting = false;
     playbackError = "";
 
+    nativeAudio?.setContext(tracks);
     loadAudio(track.path, position);
     persistLibrary();
 
@@ -227,17 +333,17 @@ export function createPlayer() {
     selectTrack(index, true);
   }
 
+  function pausePlayback() {
+    playbackRequestId += 1;
+    pauseAudio();
+    isPlaying = false;
+    isStarting = false;
+    persistLibrary();
+  }
+
   function togglePlayback() {
     if (!currentTrack) return;
-
-    if (isPlaying || isStarting) {
-      playbackRequestId += 1;
-      pauseAudio();
-      isPlaying = false;
-      isStarting = false;
-      persistLibrary();
-      return;
-    }
+    if (isPlaying || isStarting) { pausePlayback(); return; }
 
     void startPlayback();
   }
@@ -260,15 +366,22 @@ export function createPlayer() {
     }
 
     order.finishCycle(repeatMode === "all");
+    nativeAudio?.setOptions(order.shuffle, repeatMode);
     persistSettings();
   }
 
   function toggleShuffle() {
     order.setShuffle(!order.shuffle);
+    nativeAudio?.setOptions(order.shuffle, repeatMode);
     persistSettings();
   }
 
   function navigate(direction: "next" | "previous") {
+    if (nativeAudio) {
+      if (direction === "next") nativeAudio.next();
+      else nativeAudio.previous();
+      return;
+    }
     const repeatAll = repeatMode === "all";
 
     const id =
@@ -370,6 +483,7 @@ export function createPlayer() {
       const nextIndex = Math.min(removedIndex, tracks.length - 1);
       selectTrack(nextIndex, continuePlaying);
     } else {
+      nativeAudio?.syncQueue(tracks);
       persistLibrary();
     }
 
@@ -415,6 +529,8 @@ export function createPlayer() {
     });
 
     const unsubscribeEnded = onAudioEnded(() => {
+      // The Android service advances its own queue even when the WebView sleeps.
+      if (nativeAudio) return;
       if (!isPlaying) return;
 
       isPlaying = false;
@@ -439,6 +555,7 @@ export function createPlayer() {
     });
 
     let removeCloseListener: (() => void) | undefined;
+    let removeNativeState: (() => void) | undefined;
 
     if (isTauri()) {
       const saved = loadLibrary();
@@ -458,7 +575,7 @@ export function createPlayer() {
         (track) => track.id === saved.currentTrackId,
       );
 
-      if (tracks.length > 0) {
+      if (tracks.length > 0 && !nativeAudio) {
         selectTrack(
           savedIndex >= 0 ? savedIndex : 0,
           false,
@@ -466,7 +583,46 @@ export function createPlayer() {
         );
       }
 
-      void getCurrentWindow()
+      if (nativeAudio) {
+        nativeAudio.setContext(tracks);
+        void nativeAudio.connect().then((value) => {
+          if (disposed) return;
+          nativeReady = true;
+          const restored = tracks.find((track) => track.path === value.path);
+          if (restored) {
+            order.select(restored.id);
+            order.setShuffle(value.shuffle);
+            repeatMode = value.repeatMode;
+          } else if (tracks.length > 0) {
+            selectTrack(savedIndex >= 0 ? savedIndex : 0, false, savedIndex >= 0 ? saved.position : 0);
+            nativeAudio?.setOptions(order.shuffle, repeatMode);
+          }
+          removeNativeState = nativeAudio?.onState((state) => {
+            if (disposed) return;
+            const track = tracks.find((item) => item.path === state.path);
+            if (track && track.id !== order.currentId) {
+              order.select(track.id);
+              library = library.map((item) => item.id === track.id ? { ...item, lastPlayedAt: Date.now() } : item);
+            }
+            currentTime = state.position;
+            duration = state.duration;
+            isPlaying = state.playing;
+            isStarting = state.buffering && state.playing;
+            nativeCanNext = state.canNext;
+            nativeCanPrevious = state.canPrevious;
+            if (state.playing && !state.buffering) nativeEqualizerAvailable = state.equalizerAvailable ?? null;
+            if (order.shuffle !== state.shuffle) order.setShuffle(state.shuffle);
+            repeatMode = state.repeatMode;
+            playbackError = state.error ?? "";
+            if (performance.now() - lastSavedAt >= 1500) persistLibrary();
+          });
+          isReady = libraryReady;
+        }).catch(() => {
+          if (!disposed) playbackError = "Could not connect to Android playback. Reopen Kitto to try again.";
+        });
+      }
+
+      if (isDesktopRuntime()) void getCurrentWindow()
         .onCloseRequested(() => persistLibrary())
         .then((unlisten) => {
           if (disposed) {
@@ -480,7 +636,7 @@ export function createPlayer() {
         });
     }
 
-    isReady = libraryReady;
+    isReady = libraryReady && !nativeAudio;
 
     const removeShortcuts = registerPlayerShortcuts({
       togglePlayback,
@@ -501,6 +657,11 @@ export function createPlayer() {
     });
 
     window.addEventListener("pagehide", persistLibrary);
+    const onVisibility = () => {
+      persistLibrary();
+      if (document.visibilityState === "visible") void nativeAudio?.refresh();
+    };
+    if (nativeAudio) document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       disposed = true;
@@ -512,10 +673,12 @@ export function createPlayer() {
       window.removeEventListener("pagehide", persistLibrary);
       removeShortcuts();
       removeCloseListener?.();
+      removeNativeState?.();
+      if (nativeAudio) document.removeEventListener("visibilitychange", onVisibility);
       unsubscribeProgress();
       unsubscribeEnded();
       unsubscribeError();
-      unloadAudio();
+      if (!nativeAudio) unloadAudio();
     };
   });
 
@@ -531,17 +694,19 @@ export function createPlayer() {
     get isChoosingFiles() { return isChoosingFiles; },
     get volume() { return volume; },
     get repeatMode() { return repeatMode; },
+    get nativeEqualizerAvailable() { return nativeEqualizerAvailable; },
     get duration() { return duration; },
     get displayTime() { return displayTime; },
     get progress() { return progress; },
     get isShuffling() { return order.shuffle; },
-    get canNext() { return order.canNext(repeatMode === "all"); },
-    get canPrevious() { return order.canPrevious(repeatMode === "all"); },
+    get canNext() { return nativeAudio ? nativeCanNext : order.canNext(repeatMode === "all"); },
+    get canPrevious() { return nativeAudio ? nativeCanPrevious : order.canPrevious(repeatMode === "all"); },
     toggleShuffle,
     nextTrack: () => navigate("next"),
     previousTrack: () => navigate("previous"),
     chooseFiles: () => importFiles(true),
     choosePlaylistFiles: () => importFiles(false),
+    importFolderFiles,
     playCollection,
     playLibraryTrack,
     selectTrack,
@@ -551,6 +716,8 @@ export function createPlayer() {
     clearQueue,
     clearLibrary,
     togglePlayback,
+    pausePlayback,
+    savePlaybackState: persistLibrary,
     handleVolumeChange,
     cycleRepeat,
     startSeeking,
