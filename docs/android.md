@@ -17,7 +17,7 @@ The manifest requests foreground media-playback service and wake-lock permission
 
 Android codec support depends on the device, Android version and actual encoding. Test the files you intend to use; a filename extension alone does not guarantee decoder support. Cloud document providers may need a network connection before a selected file is available.
 
-Source implementation, an APK build and a device test are separate verification stages. Browser simulations cannot establish that a service survives screen-off on a particular Android device. Production signing and Play Store publication are separate release steps.
+Source implementation, an APK build and a device test are separate verification stages. Browser simulations cannot establish that a service survives screen-off on a particular Android device. A signed APK can be installed directly; Play Store publication remains a separate step.
 
 ## Local prerequisites
 
@@ -84,6 +84,24 @@ After the first APK build, run `npm run android:test` for native audio processin
 Run `npm run android:verify` to check the built APK's signature, ZIP alignment and every ARM64/x86_64 native library's 16 KiB ELF alignment. You can supply another APK path after `--`. Linker settings in `src-tauri/build.rs` enable 16 KiB alignment with NDK r27; this is required for modern devices using larger memory pages. Passing the binary checks is separate from running on a physical 16 KiB device.
 
 Gradle uses a 1 GiB heap and two workers, with Kotlin compilation in the same process. On a machine with limited RAM, finish the APK build before starting an emulator. Idle Gradle daemons can be stopped with `gradlew --stop` from the Android project directory (`gradlew.bat` on Windows).
+
+## Build a signed release APK
+
+With the prerequisites installed, run:
+
+```bash
+npm run check
+npm test
+npm run android:release
+```
+
+This builds an ARM64 release, aligns it for 16 KiB memory pages, signs it, verifies the signature and native libraries, and writes `build/android/Kitto_0.2.0_android-arm64.apk` plus a SHA-256 checksum. Upload the APK and checksum to GitHub Releases. The release embeds the interface and does not need Vite or a development computer to run.
+
+On the first run, the command creates a private signing identity in `~/.kitto/android-signing/` (on Windows, `%USERPROFILE%\.kitto\android-signing\`). **Back up that entire directory privately, including `release.p12` and `credentials.json`.** Later updates must use the same key. Do not upload these files or commit them. `KITTO_SIGNING_DIR` can point to an existing signing directory on another machine. Losing the key prevents publishing compatible updates to installations signed with it.
+
+If a release APK has already been built, `npm run android:release -- --sign-only` signs the existing release without recompiling. Do not use this option after source changes until the release has been rebuilt.
+
+The signed release uses a different certificate from a debug preview. Android cannot install it over the preview: uninstall the debug version first, which clears its saved library and settings. Future release APKs signed with the same release key can update the installed release normally. Android 7.0 (API 24) or newer and an ARM64 device are required.
 
 ## Build without using local NDK space
 

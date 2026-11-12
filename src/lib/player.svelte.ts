@@ -3,11 +3,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { QueueTrack } from "./types";
 import { registerPlayerShortcuts } from "./shortcuts";
-import {
-  loadSettings,
-  saveSettings,
-  type RepeatMode,
-} from "./settings";
+import { loadSettings, saveSettings, type RepeatMode } from "./settings";
 import { pickTracks, loadLibrary, saveLibrary, pathKey } from "./library";
 import {
   loadAudio,
@@ -32,17 +28,13 @@ export function createPlayer() {
   let queueIsLibrary = $state(true);
   let isReady = $state(false);
 
-  const order = createPlaybackOrder(
-    () => tracks.map((track) => track.id),
-  );
+  const order = createPlaybackOrder(() => tracks.map((track) => track.id));
 
   let currentIndex = $derived(
     tracks.findIndex((track) => track.id === order.currentId),
   );
 
-  let currentTrack = $derived<QueueTrack | null>(
-    tracks[currentIndex] ?? null,
-  );
+  let currentTrack = $derived<QueueTrack | null>(tracks[currentIndex] ?? null);
 
   let playbackError = $state("");
   let storageError = $state("");
@@ -86,7 +78,11 @@ export function createPlayer() {
 
     const saved = saveLibrary({
       tracks: library,
-      queue: { trackIds: tracks.map((track) => track.id), name: queueName, isLibrary: queueIsLibrary },
+      queue: {
+        trackIds: tracks.map((track) => track.id),
+        name: queueName,
+        isLibrary: queueIsLibrary,
+      },
       currentTrackId: currentTrack?.id ?? null,
       position: currentTrack ? getAudioProgress().currentTime : 0,
     });
@@ -99,11 +95,7 @@ export function createPlayer() {
     selected: readonly QueueTrack[],
     appendToQueue: boolean,
   ): string[] | null {
-    if (
-      disposed ||
-      !libraryReady ||
-      (nativeAudio && !nativeReady)
-    ) {
+    if (disposed || !libraryReady || (nativeAudio && !nativeReady)) {
       return null;
     }
 
@@ -133,70 +125,64 @@ export function createPlayer() {
       importedIds.add(track.id);
     }
 
-    const nextLibrary = added.length > 0
-      ? [...library, ...added]
-      : library;
+    const nextLibrary = added.length > 0 ? [...library, ...added] : library;
 
     const updateQueue =
       appendToQueue && (queueIsLibrary || tracks.length === 0);
-    
-      const nextQueue = updateQueue ? [...nextLibrary] : tracks;
 
-      const nextIsLibrary = updateQueue
-        ? true
-        : !appendToQueue && added.length > 0
-          ? false
-          : queueIsLibrary;
+    const nextQueue = updateQueue ? [...nextLibrary] : tracks;
 
-      const nextQueueName = updateQueue ? "Music" : queueName;
+    const nextIsLibrary = updateQueue
+      ? true
+      : !appendToQueue && added.length > 0
+        ? false
+        : queueIsLibrary;
 
-      const currentId = currentTrack?.id ?? null;
-      const nextCurrentId = currentId ??
-        (updateQueue ? nextQueue[0]?.id ?? null : null);
-      
-      const saved = saveLibrary({
-        tracks: nextLibrary,
-        queue: {
-          trackIds: nextQueue.map((track) => track.id),
-          name: nextQueueName,
-          isLibrary: nextIsLibrary,
-        },
-        currentTrackId: nextCurrentId,
-        position: currentId ? getAudioProgress().currentTime : 0,
-      });
+    const nextQueueName = updateQueue ? "Music" : queueName;
 
-      if (!saved) {
-        storageError = "Could not save your library"
-        return null;
+    const currentId = currentTrack?.id ?? null;
+    const nextCurrentId =
+      currentId ?? (updateQueue ? (nextQueue[0]?.id ?? null) : null);
+
+    const saved = saveLibrary({
+      tracks: nextLibrary,
+      queue: {
+        trackIds: nextQueue.map((track) => track.id),
+        name: nextQueueName,
+        isLibrary: nextIsLibrary,
+      },
+      currentTrackId: nextCurrentId,
+      position: currentId ? getAudioProgress().currentTime : 0,
+    });
+
+    if (!saved) {
+      storageError = "Could not save your library";
+      return null;
+    }
+
+    library = nextLibrary;
+    queueIsLibrary = nextIsLibrary;
+    queueName = nextQueueName;
+    storageError = "";
+    lastSavedAt = performance.now();
+
+    if (updateQueue) {
+      tracks = nextQueue;
+
+      if (currentIndex < 0 && tracks.length > 0) {
+        selectTrack(0);
       }
 
-      library = nextLibrary;
-      queueIsLibrary = nextIsLibrary;
-      queueName = nextQueueName;
-      storageError = "";
-      lastSavedAt = performance.now();
+      nativeAudio?.syncQueue(tracks);
+    }
 
-      if (updateQueue) {
-        tracks = nextQueue;
-
-        if (currentIndex < 0 && tracks.length > 0) {
-          selectTrack(0);
-        }
-
-        nativeAudio?.syncQueue(tracks);
-      }
-
-      return [...importedIds];
+    return [...importedIds];
   }
 
-  async function importFiles(
-    appendToQueue: boolean,
-    ): Promise<string[] | null> {
-    
+  async function importFiles(appendToQueue: boolean): Promise<string[] | null> {
     if (isChoosingFiles || disposed) return [];
     if (nativeAudio && !nativeReady) return null;
     if (isTauri() && !libraryReady) return null;
-
 
     isChoosingFiles = true;
     playbackError = "";
@@ -204,38 +190,37 @@ export function createPlayer() {
     try {
       const selected = await pickTracks();
 
-
       if (disposed || selected.length === 0) return [];
-
 
       return mergeImportedTracks(selected, appendToQueue);
     } catch (cause) {
       if (!disposed) {
-        playbackError = cause instanceof Error
-          ? cause.message
-          : "Could not choose audio files";
+        playbackError =
+          cause instanceof Error
+            ? cause.message
+            : "Could not choose audio files";
       }
 
       return null;
     } finally {
       isChoosingFiles = false;
-      }
     }
-    
-    function importFolderFiles(
-      files: readonly Pick<QueueTrack, "path" | "title">[],
-    ): string[] | null {
-      if (isChoosingFiles || disposed) return null;
+  }
 
-      const selected: QueueTrack[] = files.map((file) => ({
-        id: crypto.randomUUID(),
-        path: file.path,
-        title: file.title,
-        addedAt: Date.now(),
-      }));
+  function importFolderFiles(
+    files: readonly Pick<QueueTrack, "path" | "title">[],
+  ): string[] | null {
+    if (isChoosingFiles || disposed) return null;
 
-      return mergeImportedTracks(selected, queueIsLibrary);
-    }
+    const selected: QueueTrack[] = files.map((file) => ({
+      id: crypto.randomUUID(),
+      path: file.path,
+      title: file.title,
+      addedAt: Date.now(),
+    }));
+
+    return mergeImportedTracks(selected, queueIsLibrary);
+  }
 
   function playCollection(
     ids: string[],
@@ -255,21 +240,25 @@ export function createPlayer() {
     tracks = next;
     queueName = name;
     queueIsLibrary = isLibrary;
-    const index = Math.max(0, next.findIndex((track) => track.id === startId));
+    const index = Math.max(
+      0,
+      next.findIndex((track) => track.id === startId),
+    );
     order.select(next[index].id, true);
     selectTrack(index, true);
     return true;
   }
 
   function playLibraryTrack(id: string) {
-    playCollection(library.map((track) => track.id), "Music", id, true);
+    playCollection(
+      library.map((track) => track.id),
+      "Music",
+      id,
+      true,
+    );
   }
 
-  function selectTrack(
-    index: number,
-    autoplay = false,
-    position = 0,
-  ) {
+  function selectTrack(index: number, autoplay = false, position = 0) {
     if (nativeAudio && !nativeReady) return;
     const track = tracks[index];
 
@@ -308,8 +297,9 @@ export function createPlayer() {
       if (requestId === playbackRequestId) {
         isPlaying = true;
         const id = currentTrack?.id;
-        library = library.map((track) => track.id === id
-          ? { ...track, lastPlayedAt: Date.now() } : track);
+        library = library.map((track) =>
+          track.id === id ? { ...track, lastPlayedAt: Date.now() } : track,
+        );
         persistLibrary();
       }
     } catch {
@@ -343,7 +333,10 @@ export function createPlayer() {
 
   function togglePlayback() {
     if (!currentTrack) return;
-    if (isPlaying || isStarting) { pausePlayback(); return; }
+    if (isPlaying || isStarting) {
+      pausePlayback();
+      return;
+    }
 
     void startPlayback();
   }
@@ -385,9 +378,7 @@ export function createPlayer() {
     const repeatAll = repeatMode === "all";
 
     const id =
-      direction === "next"
-        ? order.next(repeatAll)
-        : order.previous(repeatAll);
+      direction === "next" ? order.next(repeatAll) : order.previous(repeatAll);
 
     persistSettings();
 
@@ -502,9 +493,7 @@ export function createPlayer() {
   }
 
   function adjustVolume(delta: number) {
-    volume = Math.round(
-      Math.max(0, Math.min(1, volume + delta)) * 100,
-    ) / 100;
+    volume = Math.round(Math.max(0, Math.min(1, volume + delta)) * 100) / 100;
 
     setVolume(volume);
     persistSettings();
@@ -563,13 +552,16 @@ export function createPlayer() {
       const byId = new Map(library.map((track) => [track.id, track]));
       queueIsLibrary = saved.queue?.isLibrary ?? true;
       queueName = saved.queue?.name ?? "Music";
-      tracks = queueIsLibrary || !saved.queue ? [...library]
-        : saved.queue.trackIds.flatMap((id) => {
-          const track = byId.get(id);
-          return track ? [track] : [];
-        });
+      tracks =
+        queueIsLibrary || !saved.queue
+          ? [...library]
+          : saved.queue.trackIds.flatMap((id) => {
+              const track = byId.get(id);
+              return track ? [track] : [];
+            });
       libraryReady = !saved.readError;
-      if (saved.readError) storageError = "Could not load your library. Your saved data was kept.";
+      if (saved.readError)
+        storageError = "Could not load your library. Your saved data was kept.";
 
       const savedIndex = tracks.findIndex(
         (track) => track.id === saved.currentTrackId,
@@ -585,55 +577,71 @@ export function createPlayer() {
 
       if (nativeAudio) {
         nativeAudio.setContext(tracks);
-        void nativeAudio.connect().then((value) => {
-          if (disposed) return;
-          nativeReady = true;
-          const restored = tracks.find((track) => track.path === value.path);
-          if (restored) {
-            order.select(restored.id);
-            order.setShuffle(value.shuffle);
-            repeatMode = value.repeatMode;
-          } else if (tracks.length > 0) {
-            selectTrack(savedIndex >= 0 ? savedIndex : 0, false, savedIndex >= 0 ? saved.position : 0);
-            nativeAudio?.setOptions(order.shuffle, repeatMode);
-          }
-          removeNativeState = nativeAudio?.onState((state) => {
+        void nativeAudio
+          .connect()
+          .then((value) => {
             if (disposed) return;
-            const track = tracks.find((item) => item.path === state.path);
-            if (track && track.id !== order.currentId) {
-              order.select(track.id);
-              library = library.map((item) => item.id === track.id ? { ...item, lastPlayedAt: Date.now() } : item);
+            nativeReady = true;
+            const restored = tracks.find((track) => track.path === value.path);
+            if (restored) {
+              order.select(restored.id);
+              order.setShuffle(value.shuffle);
+              repeatMode = value.repeatMode;
+            } else if (tracks.length > 0) {
+              selectTrack(
+                savedIndex >= 0 ? savedIndex : 0,
+                false,
+                savedIndex >= 0 ? saved.position : 0,
+              );
+              nativeAudio?.setOptions(order.shuffle, repeatMode);
             }
-            currentTime = state.position;
-            duration = state.duration;
-            isPlaying = state.playing;
-            isStarting = state.buffering && state.playing;
-            nativeCanNext = state.canNext;
-            nativeCanPrevious = state.canPrevious;
-            if (state.playing && !state.buffering) nativeEqualizerAvailable = state.equalizerAvailable ?? null;
-            if (order.shuffle !== state.shuffle) order.setShuffle(state.shuffle);
-            repeatMode = state.repeatMode;
-            playbackError = state.error ?? "";
-            if (performance.now() - lastSavedAt >= 1500) persistLibrary();
+            removeNativeState = nativeAudio?.onState((state) => {
+              if (disposed) return;
+              const track = tracks.find((item) => item.path === state.path);
+              if (track && track.id !== order.currentId) {
+                order.select(track.id);
+                library = library.map((item) =>
+                  item.id === track.id
+                    ? { ...item, lastPlayedAt: Date.now() }
+                    : item,
+                );
+              }
+              currentTime = state.position;
+              duration = state.duration;
+              isPlaying = state.playing;
+              isStarting = state.buffering && state.playing;
+              nativeCanNext = state.canNext;
+              nativeCanPrevious = state.canPrevious;
+              if (state.playing && !state.buffering)
+                nativeEqualizerAvailable = state.equalizerAvailable ?? null;
+              if (order.shuffle !== state.shuffle)
+                order.setShuffle(state.shuffle);
+              repeatMode = state.repeatMode;
+              playbackError = state.error ?? "";
+              if (performance.now() - lastSavedAt >= 1500) persistLibrary();
+            });
+            isReady = libraryReady;
+          })
+          .catch(() => {
+            if (!disposed)
+              playbackError =
+                "Could not connect to Android playback. Reopen Kitto to try again.";
           });
-          isReady = libraryReady;
-        }).catch(() => {
-          if (!disposed) playbackError = "Could not connect to Android playback. Reopen Kitto to try again.";
-        });
       }
 
-      if (isDesktopRuntime()) void getCurrentWindow()
-        .onCloseRequested(() => persistLibrary())
-        .then((unlisten) => {
-          if (disposed) {
-            unlisten();
-          } else {
-            removeCloseListener = unlisten;
-          }
-        })
-        .catch((error) => {
-          console.error("Could not register close handler.", error);
-        });
+      if (isDesktopRuntime())
+        void getCurrentWindow()
+          .onCloseRequested(() => persistLibrary())
+          .then((unlisten) => {
+            if (disposed) {
+              unlisten();
+            } else {
+              removeCloseListener = unlisten;
+            }
+          })
+          .catch((error) => {
+            console.error("Could not register close handler.", error);
+          });
     }
 
     isReady = libraryReady && !nativeAudio;
@@ -661,7 +669,8 @@ export function createPlayer() {
       persistLibrary();
       if (document.visibilityState === "visible") void nativeAudio?.refresh();
     };
-    if (nativeAudio) document.addEventListener("visibilitychange", onVisibility);
+    if (nativeAudio)
+      document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       disposed = true;
@@ -674,7 +683,8 @@ export function createPlayer() {
       removeShortcuts();
       removeCloseListener?.();
       removeNativeState?.();
-      if (nativeAudio) document.removeEventListener("visibilitychange", onVisibility);
+      if (nativeAudio)
+        document.removeEventListener("visibilitychange", onVisibility);
       unsubscribeProgress();
       unsubscribeEnded();
       unsubscribeError();
@@ -683,24 +693,62 @@ export function createPlayer() {
   });
 
   return {
-    get tracks() { return tracks; },
-    get library() { return library; },
-    get queueName() { return queueName; },
-    get isReady() { return isReady; },
-    get currentIndex() { return currentIndex; },
-    get currentTrack() { return currentTrack; },
-    get playbackError() { return playbackError || storageError; },
-    get isPlaying() { return isPlaying || isStarting; },
-    get isChoosingFiles() { return isChoosingFiles; },
-    get volume() { return volume; },
-    get repeatMode() { return repeatMode; },
-    get nativeEqualizerAvailable() { return nativeEqualizerAvailable; },
-    get duration() { return duration; },
-    get displayTime() { return displayTime; },
-    get progress() { return progress; },
-    get isShuffling() { return order.shuffle; },
-    get canNext() { return nativeAudio ? nativeCanNext : order.canNext(repeatMode === "all"); },
-    get canPrevious() { return nativeAudio ? nativeCanPrevious : order.canPrevious(repeatMode === "all"); },
+    get tracks() {
+      return tracks;
+    },
+    get library() {
+      return library;
+    },
+    get queueName() {
+      return queueName;
+    },
+    get isReady() {
+      return isReady;
+    },
+    get currentIndex() {
+      return currentIndex;
+    },
+    get currentTrack() {
+      return currentTrack;
+    },
+    get playbackError() {
+      return playbackError || storageError;
+    },
+    get isPlaying() {
+      return isPlaying || isStarting;
+    },
+    get isChoosingFiles() {
+      return isChoosingFiles;
+    },
+    get volume() {
+      return volume;
+    },
+    get repeatMode() {
+      return repeatMode;
+    },
+    get nativeEqualizerAvailable() {
+      return nativeEqualizerAvailable;
+    },
+    get duration() {
+      return duration;
+    },
+    get displayTime() {
+      return displayTime;
+    },
+    get progress() {
+      return progress;
+    },
+    get isShuffling() {
+      return order.shuffle;
+    },
+    get canNext() {
+      return nativeAudio ? nativeCanNext : order.canNext(repeatMode === "all");
+    },
+    get canPrevious() {
+      return nativeAudio
+        ? nativeCanPrevious
+        : order.canPrevious(repeatMode === "all");
+    },
     toggleShuffle,
     nextTrack: () => navigate("next"),
     previousTrack: () => navigate("previous"),
@@ -727,3 +775,4 @@ export function createPlayer() {
     seekBy,
   };
 }
+export type PlayController = ReturnType<typeof createPlayer>;

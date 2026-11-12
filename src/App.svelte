@@ -12,23 +12,22 @@
   import { registerAndroidBack } from "./lib/mobile-back";
   import { createTuning } from "./lib/tuning.svelte";
   import { configureTuning } from "./lib/audio";
-  import { createMusicFolders } from "./lib/music-folders.svelte"; 
-  import { 
+  import { createMusicFolders } from "./lib/music-folders.svelte";
+  import { createMiniPlayerWindow } from "./lib/mini-player-window.svelte";
+  import {
     pickDesktopMusicFolder,
     scanDesktopMusicFolder,
     type FolderScanResult,
-  } from "./lib/music-folder-access"
-
+  } from "./lib/music-folder-access";
 
   const appearance = createAppearance();
   const favorites = createFavorites();
   const listeningStats = createListeningStats();
   const tuning = createTuning(configureTuning);
+  const miniWindow = createMiniPlayerWindow();
   let player = $state<{
     playHistoryTrack: (id: string) => void;
-    importFolderFiles: (
-      files: FolderScanResult["files"],
-    ) => string[] | null;
+    importFolderFiles: (files: FolderScanResult["files"]) => string[] | null;
     handleMobileBack: () => boolean;
     prepareForExit: () => void;
   }>();
@@ -40,23 +39,37 @@
     },
     (files) => player?.importFolderFiles(files) ?? null,
   );
-  
+
   let statsOpen = $state(false);
   let settingsOpen = $state(false);
+  $effect(() => {
+    document.documentElement.dataset.miniPlayer = String(miniWindow.isMini);
+  });
+
+  async function openMiniPlayer(): Promise<void> {
+    statsOpen = false;
+    settingsOpen = false;
+
+    await miniWindow.enter();
+  }
 
   $effect(() => {
     const mode = appearance.mode;
     if (!appearance.isReady || !isDesktopRuntime()) return;
 
-    void getCurrentWindow().setTheme(mode).catch((error) => {
-      console.warn("Could not update window theme.", error);
-    });
+    void getCurrentWindow()
+      .setTheme(mode)
+      .catch((error) => {
+        console.warn("Could not update window theme.", error);
+      });
   });
 
-  onMount(() => registerAndroidBack({
-    navigate: () => player?.handleMobileBack() ?? false,
-    beforeExit: () => player?.prepareForExit(),
-  }));
+  onMount(() =>
+    registerAndroidBack({
+      navigate: () => player?.handleMobileBack() ?? false,
+      beforeExit: () => player?.prepareForExit(),
+    }),
+  );
 </script>
 
 <svelte:head>
@@ -71,23 +84,70 @@
       <h1>{productName}</h1>
     </div>
     <div class="header-actions">
-      <button class="settings-trigger" type="button" aria-label="Open listening statistics"
-        aria-haspopup="dialog" title="Listening statistics" onclick={() => statsOpen = true}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <button
+        class="settings-trigger"
+        type="button"
+        aria-label="Open listening statistics"
+        aria-haspopup="dialog"
+        title="Listening statistics"
+        onclick={() => (statsOpen = true)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
           <path d="M4 20V10m8 10V4m8 16v-7" />
         </svg>
         <span>Stats</span>
       </button>
+
+      {#if miniWindow.supported}
+        <button
+          class="settings-trigger"
+          type="button"
+          aria-label="Open mini player"
+          title="Open mini player"
+          disabled={!miniWindow.isReady || miniWindow.isBusy}
+          onclick={() => void openMiniPlayer()}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="3" />
+            <rect x="11" y="11" width="7" height="6" rx="1" />
+          </svg>
+          <span>Mini</span>
+        </button>
+      {/if}
+
       <button
         class="settings-trigger"
         type="button"
         aria-label="Open settings"
         aria-haspopup="dialog"
         title="Settings"
-        onclick={() => settingsOpen = true}
+        onclick={() => (settingsOpen = true)}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-          <path d="M9.5 3h5l.7 2.5 2.2 1.3 2.5-.6 2.5 4.3-1.8 1.8v2.5l1.8 1.8-2.5 4.3-2.5-.6-2.2 1.3-.7 2.4h-5l-.7-2.4-2.2-1.3-2.5.6L1.6 17l1.8-1.8v-2.5l-1.8-1.8 2.5-4.3 2.5.6 2.2-1.3Z" transform="translate(1 0) scale(.9)" />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M9.5 3h5l.7 2.5 2.2 1.3 2.5-.6 2.5 4.3-1.8 1.8v2.5l1.8 1.8-2.5 4.3-2.5-.6-2.2 1.3-.7 2.4h-5l-.7-2.4-2.2-1.3-2.5.6L1.6 17l1.8-1.8v-2.5l-1.8-1.8 2.5-4.3 2.5.6 2.2-1.3Z"
+            transform="translate(1 0) scale(.9)"
+          />
           <circle cx="12" cy="12" r="3.2" />
         </svg>
         <span>Settings</span>
@@ -96,9 +156,21 @@
   </header>
 
   <main class="app-main">
-    <Player bind:this={player} theme={appearance.theme} {favorites} {listeningStats} />
+    <Player
+      bind:this={player}
+      theme={appearance.theme}
+      {favorites}
+      {listeningStats}
+      {miniWindow}
+    />
   </main>
 </div>
+
+{#if miniWindow.error && !miniWindow.isMini}
+  <p class="window-mode-error" role="alert">
+    {miniWindow.error}
+  </p>
+{/if}
 
 <SettingsPanel
   {tuning}
@@ -106,7 +178,7 @@
   {favorites}
   {musicFolders}
   open={settingsOpen}
-  onclose={() => settingsOpen = false}
+  onclose={() => (settingsOpen = false)}
 />
 
 <ListeningStatsPanel
@@ -114,7 +186,13 @@
   summary={listeningStats.summary}
   isReady={listeningStats.isReady}
   error={listeningStats.error}
-  onclose={() => { listeningStats.flush(); statsOpen = false; }}
-  onplay={(id) => { player?.playHistoryTrack(id); statsOpen = false; }}
+  onclose={() => {
+    listeningStats.flush();
+    statsOpen = false;
+  }}
+  onplay={(id) => {
+    player?.playHistoryTrack(id);
+    statsOpen = false;
+  }}
   onreset={listeningStats.clear}
 />

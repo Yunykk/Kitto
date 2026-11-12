@@ -7,6 +7,12 @@
   "permissions": [
     "core:window:allow-destroy",
     "core:window:allow-set-theme",
+    "core:window:allow-set-size",
+    "core:window:allow-set-min-size",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-unmaximize",
+    "core:window:allow-maximize",
+    "core:window:allow-set-fullscreen",
     "fs:allow-read-dir",
     "window-state:default"
   ]

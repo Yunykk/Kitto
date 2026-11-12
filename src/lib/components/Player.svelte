@@ -19,17 +19,20 @@
   import type { ListeningStatsController } from "../listening.svelte";
   import { observeListening } from "../listening-session.svelte";
   import { isAndroidAudio } from "../android-bridge";
+  import MiniPlayer from "./MiniPlayer.svelte";
+  import type { MiniPlayerWindowController } from "../mini-player-window.svelte";
 
   let {
     theme = "orbit",
     favorites,
     listeningStats,
-  } : {
+    miniWindow,
+  }: {
     theme?: ThemeId;
     favorites: FavoritesController;
     listeningStats: ListeningStatsController;
+    miniWindow: MiniPlayerWindowController;
   } = $props();
-
 
   const player = createPlayer();
 
@@ -41,44 +44,65 @@
 
   const equalizer = createEqualizer(configureEqualizer);
   let equalizerOpen = $state(false);
-  const collections = createPlaylists(() => player.isReady ? player.library.map((track) => track.id) : null);
+  $effect(() => {
+    if (miniWindow.isMini) {
+      equalizerOpen = false;
+      player.cancelSeek();
+    }
+  });
+  const collections = createPlaylists(() =>
+    player.isReady ? player.library.map((track) => track.id) : null,
+  );
   $effect(() => {
     if (!player.isReady || !favorites.isReady) return;
 
-    favorites.prune(
-      player.library.map((track) => track.id),
-    );
+    favorites.prune(player.library.map((track) => track.id));
   });
 
-  const libraryMetadata = createQueueMetadata(
-    () => player.library,
-  );
+  const libraryMetadata = createQueueMetadata(() => player.library);
   const trackMetadata = createTrackMetadata(
     () => player.currentTrack?.path ?? null,
-    () => player.isShuffling || player.currentIndex < 0
-      ? null
-      : player.tracks[player.currentIndex + 1]?.path ?? null,
+    () =>
+      player.isShuffling || player.currentIndex < 0
+        ? null
+        : (player.tracks[player.currentIndex + 1]?.path ?? null),
   );
   const currentTags = $derived(
-    trackMetadata.data ?? libraryMetadata.tracks.find((track) => track.id === player.currentTrack?.id) ?? null,
+    trackMetadata.data ??
+      libraryMetadata.tracks.find(
+        (track) => track.id === player.currentTrack?.id,
+      ) ??
+      null,
   );
   const displayTitle = $derived(
     currentTags?.title ??
-    player.currentTrack?.title ??
-    (player.library.length > 0 ? "No track selected" : "Your library is empty"),
+      player.currentTrack?.title ??
+      (player.library.length > 0
+        ? "No track selected"
+        : "Your library is empty"),
   );
 
   $effect(() => {
     listeningStats.setAvailableTracks(player.library.map((track) => track.id));
   });
 
-  const listeningSession = observeListening(() => listeningStats, (path) => {
-    const track = player.library.find((item) => item.path === path);
-    if (!track) return null;
-    const tags = player.currentTrack?.path === path ? currentTags
-      : libraryMetadata.tracks.find((item) => item.id === track.id);
-    return { id: track.id, title: tags?.title ?? track.title, artist: tags?.artist ?? null, album: tags?.album ?? null };
-  });
+  const listeningSession = observeListening(
+    () => listeningStats,
+    (path) => {
+      const track = player.library.find((item) => item.path === path);
+      if (!track) return null;
+      const tags =
+        player.currentTrack?.path === path
+          ? currentTags
+          : libraryMetadata.tracks.find((item) => item.id === track.id);
+      return {
+        id: track.id,
+        title: tags?.title ?? track.title,
+        artist: tags?.artist ?? null,
+        album: tags?.album ?? null,
+      };
+    },
+  );
 
   export function playHistoryTrack(id: string) {
     if (!player.library.some((track) => track.id === id)) return;
@@ -137,24 +161,49 @@
     },
 
     player,
-
   );
-
 
   let view = $state<"player" | "queue">("player");
 </script>
 
 <div class="player" data-view={view}>
+  {#if miniWindow.isMini}
+    <div class="mini-player-host">
+      <MiniPlayer
+        {player}
+        {favorites}
+        windowController={miniWindow}
+        title={displayTitle}
+        artist={currentTags?.artist ?? null}
+        coverUrl={trackMetadata.data?.coverUrl ?? null}
+        coverStatus={trackMetadata.coverStatus}
+      />
+    </div>
+  {/if}
+
   <div class="player-toolbar">
     <div class="view-switch" role="group" aria-label="Player view">
-      <button type="button" aria-label="Show player" aria-pressed={view === "player"} onclick={() => view = "player"}>
+      <button
+        type="button"
+        aria-label="Show player"
+        aria-pressed={view === "player"}
+        onclick={() => (view = "player")}
+      >
         Player
       </button>
-      <button type="button" aria-label="Show library" aria-pressed={view === "queue"} onclick={() => view = "queue"}>
+      <button
+        type="button"
+        aria-label="Show library"
+        aria-pressed={view === "queue"}
+        onclick={() => (view = "queue")}
+      >
         Library <span class="view-count">{player.library.length}</span>
       </button>
     </div>
-    <AddMusicButton isChoosingFiles={player.isChoosingFiles} onadd={player.chooseFiles} />
+    <AddMusicButton
+      isChoosingFiles={player.isChoosingFiles}
+      onadd={player.chooseFiles}
+    />
   </div>
 
   <TrackList
@@ -209,7 +258,9 @@
         error={trackMetadata.error}
         status={player.currentTrack
           ? `${player.isPlaying ? "Playing" : "Paused"} · Track ${player.currentIndex + 1} of ${player.tracks.length}`
-          : player.library.length > 0 ? "Choose a track or playlist" : "Add music to start listening"}
+          : player.library.length > 0
+            ? "Choose a track or playlist"
+            : "Add music to start listening"}
       />
       <PlaybackTimeline
         time={player.displayTime}
@@ -236,20 +287,22 @@
         repeatMode={player.repeatMode}
         volume={player.volume}
         equalizerEnabled={equalizer.settings.enabled}
-        onequalizer={() => equalizerOpen = true}
+        onequalizer={() => (equalizerOpen = true)}
         onshuffle={player.toggleShuffle}
         onrepeat={player.cycleRepeat}
         onvolumechange={player.handleVolumeChange}
       />
 
       {#if player.playbackError}
-        <p class="playback-error" role="alert" title={player.playbackError}>{player.playbackError}</p>
+        <p class="playback-error" role="alert" title={player.playbackError}>
+          {player.playbackError}
+        </p>
       {/if}
 
       {#if favorites.error}
-          <p class="playback-error" role="alert">
-            {favorites.error}
-          </p>
+        <p class="playback-error" role="alert">
+          {favorites.error}
+        </p>
       {/if}
     </div>
   </section>
@@ -257,9 +310,13 @@
   <div class="queue-player" style:--progress={`${player.progress * 100}%`}>
     <div class="queue-track-info">
       <span>{player.isPlaying ? "Now playing" : "Paused"}</span>
-      <p title={displayTitle}>{player.currentTrack ? displayTitle : "No track selected"}</p>
+      <p title={displayTitle}>
+        {player.currentTrack ? displayTitle : "No track selected"}
+      </p>
       {#if player.playbackError}
-        <p class="queue-player-error" role="alert" title={player.playbackError}>{player.playbackError}</p>
+        <p class="queue-player-error" role="alert" title={player.playbackError}>
+          {player.playbackError}
+        </p>
       {/if}
     </div>
     <PlaybackControls
@@ -274,9 +331,13 @@
   </div>
 </div>
 
-<EqualizerPanel {equalizer} open={equalizerOpen} onclose={() => equalizerOpen = false}
+<EqualizerPanel
+  {equalizer}
+  open={equalizerOpen}
+  onclose={() => (equalizerOpen = false)}
   notice={isAndroidAudio()
     ? player.nativeEqualizerAvailable === false
       ? "This device does not expose a native equalizer. Playback and volume still work."
       : "Android applies this curve to the equalizer bands available on your device."
-    : ""} />
+    : ""}
+/>

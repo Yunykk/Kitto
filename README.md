@@ -22,7 +22,7 @@ No account is required. Music is not bundled with the app; use your own local au
 
 On Linux, use a DEB, RPM or AppImage asset when available. DEB: `sudo apt install ./Kitto_*.deb`; RPM: `sudo dnf install ./Kitto-*.rpm`; AppImage: make the downloaded file executable and open it. See [Linux installation, codecs and troubleshooting](docs/linux.md).
 
-On Android, install an ARM64 APK when available in the release assets. Allow installation from the app used to open it, then launch **Kitto** and tap **Add music**. Android grants access only to the documents you select. A debug APK is a local preview, not a Play Store release.
+On Android 7.0 or newer, download `Kitto_0.2.0_android-arm64.apk` from the release assets. Open it, allow installation from the app used to open it, then launch **Kitto** and tap **Add music**. Android grants access only to the documents you select. The signed APK installs directly; Google Play distribution is not available yet. If you previously installed a debug preview, Android requires uninstalling that preview before installing the release because their signing certificates differ. Uninstalling clears Kitto's saved library and settings.
 
 ## How to use it
 
@@ -32,6 +32,7 @@ On Android, install an ARM64 APK when available in the release assets. Allow ins
 4. Use **Playlists** to organize tracks, or click a track's heart to add it to **Liked songs**.
 5. Open **Albums** in the library to browse tagged albums in disc/track order.
 6. Open **EQ** beside the volume control to adjust the equalizer, **Stats** to view listening activity, or **Settings** to change the theme, accent color and tuning.
+7. On desktop, open **Mini** for a resizable compact player. Use the pin to keep it above other windows and the expand button to return without interrupting playback. In **Settings**, add music folders and rescan them when you add new files.
 
 Your library and player settings are saved locally. Kitto remembers file locations, so keep imported files in place. Listening statistics start accumulating when you use the app.
 
@@ -94,6 +95,8 @@ Android uses native document import and a Media3 foreground playback service, in
 - Saved queue, selected track, playback position, and player settings.
 - Keyboard shortcuts and system media controls where supported.
 - Window size and position restoration, plus a compact layout for smaller windows.
+- A resizable desktop mini player with cover art, transport controls, seeking and an always-on-top toggle.
+- Desktop music folders with recursive scanning and manual rescanning; removing a folder keeps its imported tracks.
 - Playlists, liked songs, and four collection views with sorting.
 - Albums grouped by album artist, with disc headings and track numbers.
 - Six player themes, dark mode, and custom accent colors.
@@ -104,7 +107,7 @@ Android uses native document import and a Media3 foreground playback service, in
 ## What's planned
 
 - **Jam sessions** — listen together with friends in shared listening sessions.
-- **Android distribution** — expand physical-device testing and prepare production signing and store publication.
+- **Android distribution** — expand physical-device testing and prepare Google Play publication.
 
 These are plans for future development. The current thing is getting the core player right.
 

@@ -4,6 +4,10 @@ node_modules
 /dist
 /.verification
 /android.local.json
+*.jks
+*.keystore
+*.p12
+*.pfx
 *.tsbuildinfo
 .env
 .env.*
