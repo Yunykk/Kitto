@@ -1,128 +1,73 @@
-<p align="center">
-  <img src="public/kitto.svg" alt="Kitto" width="64" height="64" />
-</p>
+# Kitto
 
-<h1 align="center">Kitto</h1>
+**i got tired of spotify.**
 
-<p align="center"><strong>i got tired of spotify</strong></p>
+i already had the music. i wanted to open the files, pick a track, and get on with my day. so i made Kitto.
 
-Kitto is a local music player for your own collection, with a clean interface and a warm visual style. Play your files, organize your queue, find tracks by name, artist, or album, and return to where you left off.
+![Kitto record label. Bring your own music.](docs/readme/record.svg)
 
-The goal is to keep everyday listening simple while gradually adding more ways to shape your sound, explore your listening habits, and share music with others.
+**[Download Kitto](https://github.com/Yunykk/Kitto/releases/latest)** · [Install](#install) · [Run from source](#run-from-source)
 
-**Kitto is in early development, with Windows and Linux desktop builds and an Android preview.**
+## Put a track on
 
-## Download and run
+Open **Add music** and pick the files you want to hear. Search by track, artist, album, or filename. You can play a whole album, build playlists, or pull up your liked songs. Kitto remembers your queue and where you stopped.
 
-1. Open [GitHub Releases](https://github.com/Yunykk/Kitto/releases).
-2. Download the Windows x64 installer from the release assets, such as `Kitto_0.2.0_x64-setup.exe`.
-3. Run the installer, then open **Kitto** from the Start menu.
+On desktop, add a music folder in **Settings** and rescan when it changes. Keep imported files at their original paths. Use the mini player when you want the controls within reach.
 
-No account is required. Music is not bundled with the app; use your own local audio files.
+![Kitto's Tape Deck theme in the browser preview](docs/readme/tape-deck.png)
 
-On Linux, use a DEB, RPM or AppImage asset when available. DEB: `sudo apt install ./Kitto_*.deb`; RPM: `sudo dnf install ./Kitto-*.rpm`; AppImage: make the downloaded file executable and open it. See [Linux installation, codecs and troubleshooting](docs/linux.md).
+*Tapeless Tape Deck. This is the actual browser UI. File import and playback require the native app.*
 
-On Android 7.0 or newer, download `Kitto_0.2.0_android-arm64.apk` from the release assets. Open it, allow installation from the app used to open it, then launch **Kitto** and tap **Add music**. Android grants access only to the documents you select. The signed APK installs directly; Google Play distribution is not available yet. If you previously installed a debug preview, Android requires uninstalling that preview before installing the release because their signing certificates differ. Uninstalling clears Kitto's saved library and settings.
+<details>
+<summary>Change the sound, or just the furniture</summary>
 
-## How to use it
+Pick a theme and accent in **Settings**. Try the 10-band EQ or choose a tuning preset, then switch back to **Original**. Presets move the pitch without changing tempo and assume the recording uses A4 = 440 Hz. **Stats** fills in as you listen.
 
-1. Click **Add music** and select audio files from your computer.
-2. Choose a track in **Music**, then use the playback buttons to play, pause, or change tracks.
-3. Drag the playback slider to seek. Adjust volume, shuffle, and repeat beside the controls.
-4. Use **Playlists** to organize tracks, or click a track's heart to add it to **Liked songs**.
-5. Open **Albums** in the library to browse tagged albums in disc/track order.
-6. Open **EQ** beside the volume control to adjust the equalizer, **Stats** to view listening activity, or **Settings** to change the theme, accent color and tuning.
-7. On desktop, open **Mini** for a resizable compact player. Use the pin to keep it above other windows and the expand button to return without interrupting playback. In **Settings**, add music folders and rescan them when you add new files.
+</details>
 
-Your library and player settings are saved locally. Kitto remembers file locations, so keep imported files in place. Listening statistics start accumulating when you use the app.
+## Install
+
+Pick the build for your device from [GitHub Releases](https://github.com/Yunykk/Kitto/releases/latest).
+
+| Device | What to grab |
+| --- | --- |
+| Windows x64 | Run the `x64-setup.exe` installer, then open Kitto from the Start menu. |
+| Linux x64 | Choose DEB, RPM, or AppImage. See the [Linux guide](docs/linux.md#install) for package commands and codecs. |
+| Android ARM64 | Open the signed `android-arm64.apk` on Android 7.0 or newer. Allow installation from the app opening the file if Android asks. |
+
+If you already have a debug build on Android, uninstall that build before installing the signed preview. Android requires matching signing keys for updates, and uninstalling clears Kitto's library and settings.
+
+Kitto has no streaming catalog, account, or shared listening sessions. On Linux, supported audio formats depend on installed GStreamer codecs. Android is a preview.
 
 ## Run from source
 
-For Windows desktop development, install:
-
-- Node.js and npm.
-- Rust through [rustup](https://rustup.rs/), using the MSVC toolchain.
-- Visual Studio Build Tools 2022 with **Desktop development with C++**, including MSVC and a Windows SDK.
-- Microsoft Edge WebView2 Runtime.
-
-From a terminal:
+Use Node.js 22.12+ and npm.
 
 ```bash
 git clone https://github.com/Yunykk/Kitto.git
 cd Kitto
-npm install
-npm run tauri dev
-```
-
-This opens Kitto as a desktop app. The first native compilation can take several minutes. Tauri starts Vite automatically; stop any separate `npm run dev` process first so port `1420` is available.
-
-For a browser-only UI preview, run `npm run dev` and open the address printed in the terminal. Native file import requires the Kitto application.
-
-## Build a Windows installer
-
-With the same prerequisites installed, run these commands from the project directory:
-
-```bash
-npm run check
-npm test
-npm run tauri build -- --bundles nsis
-```
-
-The installer is written to `src-tauri/target/release/bundle/nsis/`. For version 0.2.0, the file is `Kitto_0.2.0_x64-setup.exe`.
-
-## Build on Linux
-
-Install Linux Node.js 22.12+, stable Rust, GTK 3/WebKitGTK 4.1 development libraries and GStreamer as described in [Linux setup](docs/linux.md). Then run:
-
-```bash
 npm ci
-npm run linux:check
-npm run check
-npm test
-npm run linux:dev
+npm run dev
 ```
 
-To create AppImage, DEB and RPM packages, close the development app and run `npm run linux:build -- --ci`. Packages are written to `src-tauri/target/release/bundle/`. Linux CI builds on Ubuntu 22.04 and runs a native WebKitGTK smoke test before packaging; workflow artifacts are available after a successful run. Windows cannot build Linux packages directly.
+Open the Vite address for the UI preview. Stop Vite before starting the native app to free port `1420`.
 
-## What works now
+- **Windows.** Install [Rust](https://rustup.rs/) with the MSVC toolchain, Visual Studio Build Tools 2022 with **Desktop development with C++** and a Windows SDK, and WebView2. Use `npm run tauri dev` to launch and `npm run tauri build -- --bundles nsis` to build the installer.
+- **Linux.** Install the [native dependencies](docs/linux.md#build-from-source). Run `npm run linux:check`, then `npm run linux:dev`. Build packages with `npm run linux:build -- --ci`.
+- **Android.** Follow the [Android guide](docs/android.md) for setup, signing, and APK validation.
 
-Android uses native document import and a Media3 foreground playback service, including persistent file access and lock-screen controls. See [Android setup, APK builds and validation](docs/android.md).
+Run `npm run check` and `npm test` for frontend checks.
 
-- Local audio playback with a native file picker.
-- A queue with track removal and search by title, artist, album, or filename.
-- Embedded track information and cover art, with filenames as a fallback.
-- Playback seeking, volume control, shuffle, and repeat modes.
-- Saved queue, selected track, playback position, and player settings.
-- Keyboard shortcuts and system media controls where supported.
-- Window size and position restoration, plus a compact layout for smaller windows.
-- A resizable desktop mini player with cover art, transport controls, seeking and an always-on-top toggle.
-- Desktop music folders with recursive scanning and manual rescanning; removing a folder keeps its imported tracks.
-- Playlists, liked songs, and four collection views with sorting.
-- Albums grouped by album artist, with disc headings and track numbers.
-- Six player themes, dark mode, and custom accent colors.
-- A 10-band equalizer with presets, preamp controls, and saved settings.
-- Saved tuning presets for A4 at 396, 432, 528, 639, 741 and 852 Hz, with pitch processing that keeps the tempo unchanged. Original bypasses the pitch shift. Recordings are assumed to use A4 = 440 Hz; their original reference is not detected automatically.
-- Listening history, top tracks and artists, and daily listening activity.
+<details>
+<summary>Keyboard shortcuts and audio credits</summary>
 
-## What's planned
-
-- **Jam sessions** — listen together with friends in shared listening sessions.
-- **Android distribution** — expand physical-device testing and prepare Google Play publication.
-
-These are plans for future development. The current thing is getting the core player right.
-
-## Keyboard shortcuts
-
-| Shortcut | Action |
+| Keys | Action |
 | --- | --- |
-| `Space` | Play or pause. |
-| `Ctrl+Right` / `Ctrl+Left` | Next or previous track. |
-| `Right` / `Left` | Seek forward or backward by 5 seconds. |
-| `Up` / `Down` | Increase or decrease volume by 5%. |
+| Space | Play or pause |
+| Ctrl + Left / Right | Previous or next track |
+| Left / Right | Seek five seconds |
+| Up / Down | Change volume by five percent |
 
+Kitto uses Svelte, TypeScript, and Tauri. [Third-party audio notices](public/THIRD_PARTY_NOTICES.txt)
 
-## Built with
-
-Svelte 5, TypeScript, Vite, and Tauri 2, with Rust for the native application shell and `music-metadata` for audio tags.
-
-Desktop pitch processing uses SoundTouchJS; Android playback and pitch processing use AndroidX Media3. See [audio processing notices](public/THIRD_PARTY_NOTICES.txt).
+</details>
